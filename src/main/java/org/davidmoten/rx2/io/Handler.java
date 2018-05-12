@@ -1,6 +1,7 @@
 package org.davidmoten.rx2.io;
 
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
@@ -14,13 +15,12 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import io.reactivex.Flowable;
-import io.reactivex.Scheduler;
+import io.reactivex.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Handler {
 
-    public static void handle(Flowable<ByteBuffer> f, InputStream in, OutputStream out,
-            Scheduler scheduler) {
+    public static void handle(Flowable<ByteBuffer> f, InputStream in, OutputStream out) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
 
@@ -58,12 +58,16 @@ public final class Handler {
             this.parent = s;
             while (true) {
                 try {
+                    /// blocking call
                     long request = in.readLong();
                     if (request == REQUEST_CANCEL) {
                         cancelled = true;
-                    } else {
+                    } else if (SubscriptionHelper.validate(request)) {
                         parent.request(request);
                     }
+                } catch (EOFException e) {
+                    // just means there will be no more requests
+                    break;
                 } catch (IOException e) {
                     onError(e);
                     return;
@@ -145,7 +149,7 @@ public final class Handler {
                 }
             }
         }
-        
+
         private void writeError(Throwable err) {
             try {
                 NoCopyByteArrayOutputStream bytes = new NoCopyByteArrayOutputStream();
@@ -174,4 +178,6 @@ public final class Handler {
         out.write((v >>> 8) & 0xFF);
         out.write((v >>> 0) & 0xFF);
     }
+    
+    
 }
