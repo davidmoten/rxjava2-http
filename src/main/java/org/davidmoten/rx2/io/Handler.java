@@ -157,10 +157,9 @@ public final class Handler {
                 oos.writeObject(err);
                 oos.close();
                 System.out.println("sourceErrorBytes=" + bytes.size());
-                byte[] b = bytes.arrayInternal();
                 // mark as error by reporting length as negative
                 writeInt(out, -bytes.size());
-                channel.write(ByteBuffer.wrap(b, 0, bytes.size()));
+                channel.write(bytes.asByteBuffer());
                 channel.close();
                 out.close();
             } catch (IOException e) {
