@@ -156,10 +156,13 @@ public final class Handler {
                 ObjectOutputStream oos = new ObjectOutputStream(bytes);
                 oos.writeObject(err);
                 oos.close();
+                System.out.println("sourceErrorBytes=" + bytes.size());
                 byte[] b = bytes.arrayInternal();
                 // mark as error by reporting length as negative
-                writeInt(out, -b.length);
-                channel.write(ByteBuffer.wrap(b));
+                writeInt(out, -bytes.size());
+                channel.write(ByteBuffer.wrap(b, 0, bytes.size()));
+                channel.close();
+                out.close();
             } catch (IOException e) {
                 RxJavaPlugins.onError(e);
             }
@@ -169,7 +172,6 @@ public final class Handler {
             writeInt(out, b.remaining());
             channel.write(b);
         }
-
     }
 
     private static void writeInt(OutputStream out, int v) throws IOException {
@@ -178,6 +180,4 @@ public final class Handler {
         out.write((v >>> 8) & 0xFF);
         out.write((v >>> 0) & 0xFF);
     }
-    
-    
 }
