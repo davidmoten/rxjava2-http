@@ -15,6 +15,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import io.reactivex.Flowable;
+import io.reactivex.internal.fuseable.SimplePlainQueue;
+import io.reactivex.internal.queue.SpscLinkedArrayQueue;
 import io.reactivex.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.plugins.RxJavaPlugins;
 
@@ -41,7 +43,7 @@ public final class Handler {
         private final DataInputStream in;
         private Subscription parent;
         private boolean done;
-        private ByteBuffer bb;
+        private SimplePlainQueue<ByteBuffer> queue = new SpscLinkedArrayQueue<>(16);
         private volatile boolean finished;
         private Throwable error;
 
@@ -68,16 +70,17 @@ public final class Handler {
                 } catch (EOFException e) {
                     // just means there will be no more requests
                     break;
-                } catch (IOException e) {
+                } catch (Throwable e) {
                     onError(e);
                     return;
                 }
+                drain();
             }
         }
 
         @Override
         public void onNext(ByteBuffer bb) {
-            this.bb = bb;
+            queue.offer(bb);
             drain();
         }
 
@@ -107,39 +110,44 @@ public final class Handler {
             if (getAndIncrement() == 0) {
                 int missed = 1;
                 while (true) {
-                    if (cancelled) {
-                        bb = null;
-                        error = null;
-                        return;
-                    }
-                    boolean d = finished;
-                    ByteBuffer b = this.bb;
-                    if (b != null) {
-                        this.bb = null;
-                        try {
-                            writeOnNext(b);
-                        } catch (IOException e) {
+                    while (true) {
+                        if (cancelled) {
                             parent.cancel();
-                            writeError(e);
+                            queue.clear();
+                            error = null;
                             return;
                         }
-                    }
-                    if (d) {
-                        Throwable err = error;
-                        if (err != null) {
-                            error = null;
-                            bb = null;
-                            parent.cancel();
-                            writeError(err);
-                            return;
-                        } else {
-                            parent.cancel();
+                        boolean d = finished;
+                        ByteBuffer b = queue.poll();
+                        if (b != null) {
                             try {
-                                out.close();
-                            } catch (IOException e) {
-                                RxJavaPlugins.onError(e);
+                                writeOnNext(b);
+                            } catch (Throwable e) {
+                                parent.cancel();
+                                queue.clear();
+                                writeError(e);
+                                return;
                             }
-                            return;
+                        } else if (d) {
+                            Throwable err = error;
+                            if (err != null) {
+                                error = null;
+                                parent.cancel();
+                                queue.clear();
+                                writeError(err);
+                                return;
+                            } else {
+                                parent.cancel();
+                                queue.clear();
+                                try {
+                                    out.close();
+                                } catch (IOException e) {
+                                    RxJavaPlugins.onError(e);
+                                }
+                                return;
+                            }
+                        } else {
+                            break;
                         }
                     }
                     missed = addAndGet(-missed);
