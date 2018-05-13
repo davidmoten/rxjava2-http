@@ -6,6 +6,9 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
@@ -16,7 +19,11 @@ import io.reactivex.functions.Consumer;
 
 public final class Decoder {
 
-    public Flowable<ByteBuffer> decode(Callable<InputStream> in, int bufferSize) {
+    private Decoder() {
+        // prevent instantiation
+    }
+
+    public static Flowable<ByteBuffer> decode(Callable<InputStream> in, int bufferSize) {
         return Flowable.defer(() -> {
             DataInputStream d = new DataInputStream(in.call());
             return Flowable.generate(new Consumer<Emitter<ByteBuffer>>() {
@@ -44,8 +51,8 @@ public final class Decoder {
                             emitter.onComplete();
                         }
                     } else {
-                        byte[] b = Arrays.copyOf(buffer, n);
-                        emitter.onNext(ByteBuffer.wrap(b));
+                        ByteBuffer bb = ByteBuffer.wrap(Arrays.copyOf(buffer, n));
+                        emitter.onNext(bb);
                     }
                 }
             });
