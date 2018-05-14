@@ -9,7 +9,11 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -23,10 +27,16 @@ import io.reactivex.plugins.RxJavaPlugins;
 public final class Handler {
 
     public static void handle(Flowable<ByteBuffer> f, InputStream in, OutputStream out) {
+        handle(f, in, out, () -> {
+        });
+    }
+
+    public static void handle(Flowable<ByteBuffer> f, InputStream in, OutputStream out,
+            Runnable completion) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
 
-        HandlerSubscriber subscriber = new HandlerSubscriber(in, out);
+        HandlerSubscriber subscriber = new HandlerSubscriber(in, out, completion);
         f.subscribe(subscriber);
 
     }
@@ -49,10 +59,13 @@ public final class Handler {
 
         private volatile boolean cancelled;
 
-        public HandlerSubscriber(InputStream in, OutputStream out) {
+        private final Runnable completion;
+
+        public HandlerSubscriber(InputStream in, OutputStream out, Runnable completion) {
             this.in = new DataInputStream(in);
             this.out = out;
             this.channel = Channels.newChannel(out);
+            this.completion = completion;
         }
 
         @Override
@@ -115,6 +128,7 @@ public final class Handler {
                             parent.cancel();
                             queue.clear();
                             error = null;
+                            completion.run();
                             return;
                         }
                         boolean d = finished;
@@ -135,6 +149,7 @@ public final class Handler {
                                 parent.cancel();
                                 queue.clear();
                                 writeError(err);
+                                completion.run();
                                 return;
                             } else {
                                 parent.cancel();
@@ -144,6 +159,7 @@ public final class Handler {
                                 } catch (IOException e) {
                                     RxJavaPlugins.onError(e);
                                 }
+                                completion.run();
                                 return;
                             }
                         } else {
@@ -186,5 +202,16 @@ public final class Handler {
         out.write((v >>> 16) & 0xFF);
         out.write((v >>> 8) & 0xFF);
         out.write((v >>> 0) & 0xFF);
+    }
+
+    public static void handleBlocking(Flowable<ByteBuffer> f, ServletInputStream in,
+            ServletOutputStream out) {
+        CountDownLatch latch = new CountDownLatch(1);
+        handle(f, in, out, () -> latch.countDown());
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            // do nothing
+        }
     }
 }
