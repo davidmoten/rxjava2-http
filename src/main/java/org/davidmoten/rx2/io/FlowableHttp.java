@@ -34,8 +34,7 @@ public final class FlowableHttp extends Flowable<ByteBuffer> {
     protected void subscribeActual(Subscriber<? super ByteBuffer> subscriber) {
         HttpSubscription subscription = new HttpSubscription(in, out, preRequest, bufferSize,
                 subscriber);
-        subscriber.onSubscribe(subscription);
-        subscription.init();
+        subscription.start();
     }
 
     private static final class HttpSubscription extends AtomicLong implements Subscription {
@@ -60,7 +59,8 @@ public final class FlowableHttp extends Flowable<ByteBuffer> {
             this.child = child;
         }
 
-        public void init() {
+        public void start() {
+            child.onSubscribe(this);
             try {
                 requestViaOutputStream(preRequest);
             } catch (Throwable e) {
