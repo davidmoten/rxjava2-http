@@ -28,10 +28,18 @@ public class ClientTest {
         server.start();
 
         // Test GET
-        HttpURLConnection http = (HttpURLConnection) new URL("http://localhost:8080/")
-                .openConnection();
-        http.connect();
-        assertEquals(HttpStatus.OK_200, http.getResponseCode());
+        HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/").openConnection();
+        con.setDoOutput(true);
+        con.setInstanceFollowRedirects(false);
+        con.setRequestMethod("POST");
+        // con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        // con.setRequestProperty("charset", "utf-8");
+        // con.setRequestProperty("Content-Length", Integer.toString(postDataLength));
+        con.setUseCaches(false);
+        Client.read(con, 0, 8192) //
+                .doOnNext(x -> System.out.println(x)) //
+                .subscribe();
+        assertEquals(HttpStatus.OK_200, con.getResponseCode());
 
         // Stop Server
         server.stop();

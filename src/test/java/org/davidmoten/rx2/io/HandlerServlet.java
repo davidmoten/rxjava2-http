@@ -15,7 +15,7 @@ public final class HandlerServlet extends HttpServlet {
     private static final long serialVersionUID = 4294026368929063494L;
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         Handler.handleBlocking( //
                 Flowable.just(ByteBuffer.wrap(new byte[] { 1, 2, 3 })), //
