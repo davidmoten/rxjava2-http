@@ -12,13 +12,11 @@ import org.reactivestreams.Subscription;
 
 import io.reactivex.Flowable;
 import io.reactivex.exceptions.Exceptions;
-import io.reactivex.internal.fuseable.SimplePlainQueue;
-import io.reactivex.internal.queue.SpscLinkedArrayQueue;
 import io.reactivex.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.internal.util.BackpressureHelper;
 import io.reactivex.plugins.RxJavaPlugins;
 
-public class FlowableHttp extends Flowable<ByteBuffer> {
+public final class FlowableHttp extends Flowable<ByteBuffer> {
 
     private final InputStream in;
     private final OutputStream out;
@@ -48,8 +46,6 @@ public class FlowableHttp extends Flowable<ByteBuffer> {
         private final InputStream in;
         private final int bufferSize;
         private final Subscriber<? super ByteBuffer> child;
-        private final AtomicLong requested = new AtomicLong();
-        private final SimplePlainQueue<ByteBuffer> queue = new SpscLinkedArrayQueue<>(16);
 
         private final int preRequest;
         private volatile boolean cancelled;
@@ -82,8 +78,8 @@ public class FlowableHttp extends Flowable<ByteBuffer> {
                 } catch (IOException e) {
                     error = e;
                 }
-                if (BackpressureHelper.add(requested, n) == 0) {
-                    long r = requested.get();
+                if (BackpressureHelper.add(this, n) == 0) {
+                    long r = get();
                     while (true) {
                         while (r > 0) {
                             if (tryCancelled()) {
@@ -114,7 +110,7 @@ public class FlowableHttp extends Flowable<ByteBuffer> {
                                 return;
                             }
                         }
-                        r = requested.addAndGet(-r);
+                        r = addAndGet(-r);
                         if (r == 0) {
                             return;
                         }
@@ -130,7 +126,6 @@ public class FlowableHttp extends Flowable<ByteBuffer> {
         private boolean tryCancelled() {
             if (cancelled) {
                 closeStreams();
-                queue.clear();
                 return true;
             } else {
                 return false;
