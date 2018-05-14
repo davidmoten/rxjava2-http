@@ -18,7 +18,7 @@ public class HandlerTest {
 
     @Test
     public void testOneByteStream() {
-        InputStream in = new ByteArrayInputStream(toBytes(1L));
+        InputStream in = new ByteArrayInputStream(Util.toBytes(1L));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Flowable<ByteBuffer> f = Flowable.just(ByteBuffer.wrap(new byte[] { 12 }));
         Handler.handle(f, in, out);
@@ -29,12 +29,12 @@ public class HandlerTest {
     public void testErrorStream() throws IOException {
         RuntimeException ex = new RuntimeException("boo");
         byte[] exBytes = serialize(ex);
-        InputStream in = new ByteArrayInputStream(toBytes(1L));
+        InputStream in = new ByteArrayInputStream(Util.toBytes(1L));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Flowable<ByteBuffer> f = Flowable.error(ex);
         Handler.handle(f, in, out);
         ByteArrayOutputStream expected = new ByteArrayOutputStream();
-        expected.write(toBytes(-exBytes.length));
+        expected.write(Util.toBytes(-exBytes.length));
         expected.write(exBytes);
         assertArrayEquals(Arrays.copyOf(expected.toByteArray(), 4),
                 Arrays.copyOf(out.toByteArray(), 4));

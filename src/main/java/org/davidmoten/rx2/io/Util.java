@@ -2,13 +2,13 @@ package org.davidmoten.rx2.io;
 
 import java.io.IOException;
 
-public class Util {
-    
+class Util {
+
     private Util() {
-        //prevent instantiation
+        // prevent instantiation
     }
 
-    public static long toLong(byte[] b) {
+    static long toLong(byte[] b) {
         return (((long) b[0] << 56) //
                 + ((long) (b[1] & 255) << 48) //
                 + ((long) (b[2] & 255) << 40) //
@@ -19,7 +19,7 @@ public class Util {
                 + ((b[7] & 255) << 0));
     }
 
-    public static byte[] toBytes(long v) {
+    static byte[] toBytes(long v) {
         byte[] b = new byte[8];
         b[0] = (byte) (v >>> 56);
         b[1] = (byte) (v >>> 48);
@@ -32,7 +32,7 @@ public class Util {
         return b;
     }
 
-    public byte[] toBytes(int v) throws IOException {
+    static byte[] toBytes(int v) throws IOException {
         byte[] b = new byte[4];
         b[0] = (byte) ((v >>> 24) & 0xFF);
         b[1] = (byte) ((v >>> 16) & 0xFF);
