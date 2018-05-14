@@ -1,6 +1,9 @@
 package org.davidmoten.rx2.io;
 
+import java.io.Closeable;
 import java.io.IOException;
+
+import io.reactivex.plugins.RxJavaPlugins;
 
 class Util {
 
@@ -41,4 +44,13 @@ class Util {
         return b;
     }
 
+    static void close(Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (IOException e) {
+                RxJavaPlugins.onError(e);
+            }
+        }
+    }
 }
