@@ -7,7 +7,6 @@ import java.net.URL;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
@@ -19,7 +18,7 @@ public class ClientTest {
         // Create Server
         Server server = new Server(8080);
         ServletContextHandler context = new ServletContextHandler();
-        ServletHolder defaultServ = new ServletHolder("default", DefaultServlet.class);
+        ServletHolder defaultServ = new ServletHolder("default", HandlerServlet.class);
         defaultServ.setInitParameter("resourceBase", System.getProperty("user.dir"));
         defaultServ.setInitParameter("dirAllowed", "true");
         context.addServlet(defaultServ, "/");
