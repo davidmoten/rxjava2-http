@@ -22,10 +22,10 @@ import io.reactivex.plugins.RxJavaPlugins;
 public final class Handler {
 
     public static void handle(Flowable<ByteBuffer> f, Single<OutputStream> out, Runnable completion,
-            long id, Subscription upstream) {
+            long id, Subscription downstream) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
-        HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id, upstream);
+        HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id, downstream);
         f.subscribe(subscriber);
     }
 
