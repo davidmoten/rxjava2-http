@@ -1,6 +1,5 @@
 package org.davidmoten.rx2.io;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -13,52 +12,67 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import io.reactivex.Flowable;
-import io.reactivex.functions.Consumer;
+import io.reactivex.Single;
+import io.reactivex.SingleObserver;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.internal.fuseable.SimplePlainQueue;
 import io.reactivex.internal.queue.SpscLinkedArrayQueue;
 import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Handler {
 
-    public static void handle(Flowable<ByteBuffer> f, OutputStream out, Runnable completion, long id,
-            Consumer<Subscription> notifier) {
+    public static void handle(Flowable<ByteBuffer> f, Single<OutputStream> out, Runnable completion,
+            long id, Subscription upstream) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
-        HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id);
-        try {
-            notifier.accept(subscriber);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id, upstream);
         f.subscribe(subscriber);
     }
 
-    private static final class HandlerSubscriber extends AtomicInteger implements Subscriber<ByteBuffer>, Subscription {
+    private static final class HandlerSubscriber extends AtomicInteger
+            implements Subscriber<ByteBuffer>, Subscription, SingleObserver<OutputStream> {
 
         private static final long serialVersionUID = 1331107616659478552L;
 
-        private final OutputStream out;
+        private final Single<OutputStream> outSource;
+        private final Subscription upstream;
+        private OutputStream out;
         private final Runnable completion;
         private final long id;
-        private final WritableByteChannel channel;
+        private WritableByteChannel channel;
         private Subscription parent;
         private boolean done;
         private SimplePlainQueue<ByteBuffer> queue = new SpscLinkedArrayQueue<>(16);
         private volatile boolean finished;
         private Throwable error;
-
         private volatile boolean cancelled;
+        private Disposable disposable;
 
-        HandlerSubscriber(OutputStream out, Runnable completion, long id) {
-            this.out = out;
+        HandlerSubscriber(Single<OutputStream> outSource, Runnable completion, long id,
+                Subscription upstream) {
+            this.outSource = outSource;
             this.completion = completion;
             this.id = id;
-            this.channel = Channels.newChannel(out);
+            this.upstream = upstream;
         }
 
         @Override
         public void onSubscribe(Subscription parent) {
             this.parent = parent;
+            outSource.subscribe(this);
+        }
+        
+        // SingleObserver for outSource
+
+        @Override
+        public void onSubscribe(Disposable d) {
+            disposable = d;
+        }
+
+        @Override
+        public void onSuccess(OutputStream os) {
+            this.out = os;
+            this.channel = Channels.newChannel(out);
             try {
                 out.write(Util.toBytes(id));
             } catch (IOException e) {
@@ -67,6 +81,8 @@ public final class Handler {
             }
             drain();
         }
+        
+        // end of SingleObserver
 
         @Override
         public void onNext(ByteBuffer bb) {
@@ -181,6 +197,7 @@ public final class Handler {
 
         @Override
         public void cancel() {
+            disposable.dispose();
             parent.cancel();
             cancelled = true;
         }
