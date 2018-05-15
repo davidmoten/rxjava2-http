@@ -1,56 +1,46 @@
 package org.davidmoten.rx2.io;
 
-import java.io.DataInputStream;
-import java.io.EOFException;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import io.reactivex.Flowable;
+import io.reactivex.functions.Consumer;
 import io.reactivex.internal.fuseable.SimplePlainQueue;
 import io.reactivex.internal.queue.SpscLinkedArrayQueue;
-import io.reactivex.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Handler {
 
-    public static void handle(Flowable<ByteBuffer> f, InputStream in, OutputStream out) {
-        handle(f, in, out, () -> {
-        });
-    }
-
-    public static void handle(Flowable<ByteBuffer> f, InputStream in, OutputStream out,
-            Runnable completion) {
+    public static void handle(Flowable<ByteBuffer> f, OutputStream out, Runnable completion, long id,
+            Consumer<Subscription> notifier) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
-
-        HandlerSubscriber subscriber = new HandlerSubscriber(in, out, completion);
+        HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id);
+        try {
+            notifier.accept(subscriber);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         f.subscribe(subscriber);
-
     }
 
-    private static final class HandlerSubscriber extends AtomicInteger
-            implements Subscriber<ByteBuffer> {
-
-        private static final int REQUEST_CANCEL = -1;
+    private static final class HandlerSubscriber extends AtomicInteger implements Subscriber<ByteBuffer>, Subscription {
 
         private static final long serialVersionUID = 1331107616659478552L;
 
         private final OutputStream out;
+        private final Runnable completion;
+        private final long id;
         private final WritableByteChannel channel;
-        private final DataInputStream in;
         private Subscription parent;
         private boolean done;
         private SimplePlainQueue<ByteBuffer> queue = new SpscLinkedArrayQueue<>(16);
@@ -59,36 +49,23 @@ public final class Handler {
 
         private volatile boolean cancelled;
 
-        private final Runnable completion;
-
-        public HandlerSubscriber(InputStream in, OutputStream out, Runnable completion) {
-            this.in = new DataInputStream(in);
+        HandlerSubscriber(OutputStream out, Runnable completion, long id) {
             this.out = out;
-            this.channel = Channels.newChannel(out);
             this.completion = completion;
+            this.id = id;
+            this.channel = Channels.newChannel(out);
         }
 
         @Override
-        public void onSubscribe(Subscription s) {
-            this.parent = s;
-            while (true) {
-                try {
-                    /// blocking call
-                    long request = in.readLong();
-                    if (request == REQUEST_CANCEL) {
-                        cancelled = true;
-                    } else if (SubscriptionHelper.validate(request)) {
-                        parent.request(request);
-                    }
-                } catch (EOFException e) {
-                    // just means there will be no more requests
-                    break;
-                } catch (Throwable e) {
-                    onError(e);
-                    return;
-                }
-                drain();
+        public void onSubscribe(Subscription parent) {
+            this.parent = parent;
+            try {
+                out.write(Util.toBytes(id));
+            } catch (IOException e) {
+                error = e;
+                finished = true;
             }
+            drain();
         }
 
         @Override
@@ -195,6 +172,18 @@ public final class Handler {
             writeInt(out, b.remaining());
             channel.write(b);
         }
+
+        @Override
+        public void request(long n) {
+            parent.request(n);
+            drain();
+        }
+
+        @Override
+        public void cancel() {
+            parent.cancel();
+            cancelled = true;
+        }
     }
 
     private static void writeInt(OutputStream out, int v) throws IOException {
@@ -204,14 +193,4 @@ public final class Handler {
         out.write((v >>> 0) & 0xFF);
     }
 
-    public static void handleBlocking(Flowable<ByteBuffer> f, ServletInputStream in,
-            ServletOutputStream out) {
-        CountDownLatch latch = new CountDownLatch(1);
-        handle(f, in, out, () -> latch.countDown());
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            // do nothing
-        }
-    }
 }

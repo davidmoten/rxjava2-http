@@ -11,6 +11,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 
+import io.reactivex.functions.Consumer;
+
 public class ClientTest {
 
     @Test
@@ -29,14 +31,20 @@ public class ClientTest {
 
         // Test GET
         HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/").openConnection();
-        con.setDoOutput(true);
         con.setInstanceFollowRedirects(false);
         con.setRequestMethod("POST");
         // con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
         // con.setRequestProperty("charset", "utf-8");
         // con.setRequestProperty("Content-Length", Integer.toString(postDataLength));
         con.setUseCaches(false);
-        Client.read(con, 0, 8192) //
+        Consumer<Long> requester = new Consumer<Long>() {
+
+            @Override
+            public void accept(Long t) throws Exception {
+                // TODO Auto-generated method stub
+                
+            }};
+        Client.read(con, requester, 0, 8192) //
                 .doOnNext(x -> System.out.println(x)) //
                 .subscribe();
         assertEquals(HttpStatus.OK_200, con.getResponseCode());
