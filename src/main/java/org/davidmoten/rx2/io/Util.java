@@ -1,7 +1,10 @@
 package org.davidmoten.rx2.io;
 
 import java.io.Closeable;
+import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 
 import io.reactivex.plugins.RxJavaPlugins;
 
@@ -53,5 +56,30 @@ class Util {
             }
         }
     }
-        
+
+    // copied from DataInputStream so don't need to instantiate one
+    public static void readFully(InputStream in, byte b[], int off, int len) throws IOException {
+        if (len < 0)
+            throw new IndexOutOfBoundsException();
+        int n = 0;
+        while (n < len) {
+            int count = in.read(b, off + n, len - n);
+            if (count < 0)
+                throw new EOFException();
+            n += count;
+        }
+    }
+    
+    public static long readLong(InputStream in) throws IOException {
+        byte[] b = new byte[8];
+        readFully(in, b, 0, 8);
+        return (((long)b[0] << 56) +
+                ((long)(b[1] & 255) << 48) +
+                ((long)(b[2] & 255) << 40) +
+                ((long)(b[3] & 255) << 32) +
+                ((long)(b[4] & 255) << 24) +
+                ((b[5] & 255) << 16) +
+                ((b[6] & 255) <<  8) +
+                ((b[7] & 255) <<  0));
+    }
 }

@@ -11,7 +11,7 @@ import org.reactivestreams.Subscription;
 
 import io.reactivex.Flowable;
 import io.reactivex.exceptions.Exceptions;
-import io.reactivex.functions.Consumer;
+import io.reactivex.functions.BiConsumer;
 import io.reactivex.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.internal.util.BackpressureHelper;
 import io.reactivex.plugins.RxJavaPlugins;
@@ -19,11 +19,12 @@ import io.reactivex.plugins.RxJavaPlugins;
 public final class FlowableHttp extends Flowable<ByteBuffer> {
 
     private final InputStream in;
-    private final Consumer<Long> requester;
+    private final BiConsumer<Long, Long> requester;
     private final int bufferSize;
     private final int preRequest;
 
-    public FlowableHttp(InputStream in, Consumer<Long> requester, int preRequest, int bufferSize) {
+    public FlowableHttp(InputStream in, BiConsumer<Long, Long> requester, int preRequest,
+            int bufferSize) {
         this.in = in;
         this.requester = requester;
         this.preRequest = preRequest;
@@ -32,7 +33,8 @@ public final class FlowableHttp extends Flowable<ByteBuffer> {
 
     @Override
     protected void subscribeActual(Subscriber<? super ByteBuffer> subscriber) {
-        HttpSubscription subscription = new HttpSubscription(in, requester, preRequest, bufferSize, subscriber);
+        HttpSubscription subscription = new HttpSubscription(in, requester, preRequest, bufferSize,
+                subscriber);
         subscription.start();
     }
 
@@ -47,10 +49,12 @@ public final class FlowableHttp extends Flowable<ByteBuffer> {
         private final int preRequest;
         private volatile boolean cancelled;
         private volatile Throwable error;
-        private final Consumer<Long> requester;
+        private final BiConsumer<Long, Long> requester;
+        private long id;
 
-        HttpSubscription(InputStream in, Consumer<Long> requester, int preRequest, int bufferSize,
-                Subscriber<? super ByteBuffer> child) {
+
+        HttpSubscription(InputStream in, BiConsumer<Long, Long> requester, int preRequest,
+                int bufferSize, Subscriber<? super ByteBuffer> child) {
             this.in = in;
             this.requester = requester;
             this.preRequest = preRequest;
@@ -61,9 +65,11 @@ public final class FlowableHttp extends Flowable<ByteBuffer> {
         public void start() {
             child.onSubscribe(this);
             try {
-                requester.accept((long) preRequest);
+                id = Util.readLong(in);
+                requester.accept(id, (long) preRequest);
             } catch (Throwable e) {
                 Exceptions.throwIfFatal(e);
+                closeStreamSilently();
                 child.onError(e);
                 return;
             }
@@ -73,7 +79,7 @@ public final class FlowableHttp extends Flowable<ByteBuffer> {
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 try {
-                    requester.accept(n);
+                    requester.accept(id, n);
                 } catch (Throwable e) {
                     error = e;
                 }
@@ -95,7 +101,7 @@ public final class FlowableHttp extends Flowable<ByteBuffer> {
                             try {
                                 int count = in.read(b);
                                 if (count == -1) {
-                                    closeStream();
+                                    closeStreamSilently();
                                     child.onComplete();
                                     return;
                                 } else {
@@ -104,7 +110,7 @@ public final class FlowableHttp extends Flowable<ByteBuffer> {
                                 }
                             } catch (Throwable e) {
                                 Exceptions.throwIfFatal(e);
-                                closeStream();
+                                closeStreamSilently();
                                 child.onError(e);
                                 return;
                             }
@@ -120,14 +126,14 @@ public final class FlowableHttp extends Flowable<ByteBuffer> {
 
         private boolean tryCancelled() {
             if (cancelled) {
-                closeStream();
+                closeStreamSilently();
                 return true;
             } else {
                 return false;
             }
         }
 
-        private void closeStream() {
+        private void closeStreamSilently() {
             close(in);
         }
 

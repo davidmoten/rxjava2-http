@@ -11,7 +11,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 
-import io.reactivex.functions.Consumer;
+import io.reactivex.Single;
+import io.reactivex.functions.BiConsumer;
 
 public class ClientTest {
 
@@ -30,27 +31,32 @@ public class ClientTest {
         server.start();
 
         // Test GET
-        HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/").openConnection();
-        con.setInstanceFollowRedirects(false);
-        con.setRequestMethod("POST");
-        // con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-        // con.setRequestProperty("charset", "utf-8");
-        // con.setRequestProperty("Content-Length", Integer.toString(postDataLength));
+        HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/r=100")
+                .openConnection();
+        con.setRequestMethod("GET");
         con.setUseCaches(false);
-        Consumer<Long> requester = new Consumer<Long>() {
-
-            @Override
-            public void accept(Long t) throws Exception {
-                // TODO Auto-generated method stub
-                
-            }};
-        Client.read(con, requester, 0, 8192) //
+        BiConsumer<Long, Long> requester = createRequester();
+        Client.read(Single.just(con.getInputStream()), requester, 0, 8192) //
                 .doOnNext(x -> System.out.println(x)) //
                 .subscribe();
         assertEquals(HttpStatus.OK_200, con.getResponseCode());
 
         // Stop Server
         server.stop();
+    }
+
+    private static BiConsumer<Long, Long> createRequester() {
+        return new BiConsumer<Long, Long>() {
+
+            @Override
+            public void accept(Long id, Long request) throws Exception {
+                HttpURLConnection con = (HttpURLConnection) new URL(
+                        "http://localhost:8080/id=" + id + "&r=" + request).openConnection();
+                con.setRequestMethod("GET");
+                con.setUseCaches(false);
+
+            }
+        };
     }
 
 }

@@ -73,7 +73,7 @@ public final class HandlerServlet extends HttpServlet {
     private static long getRequest(HttpServletRequest req) {
         String rString = req.getParameter("r");
         final long r;
-        if (rString == null) {
+        if (rString != null) {
             r = Long.parseLong(rString);
         } else {
             r = 0;
