@@ -15,18 +15,34 @@ import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 import io.reactivex.internal.fuseable.SimplePlainQueue;
 import io.reactivex.internal.queue.SpscLinkedArrayQueue;
 import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Handler {
 
-    public static void handle(Flowable<ByteBuffer> f, Single<OutputStream> out, Runnable completion,
-            long id, Subscription downstream) {
+    /**
+     * Subscribes to {@code out} to obtain an {@link OutputStream}. The first 8
+     * bytes written to the {@code OutputStream} are the id of the stream.
+     * 
+     * @param flowable
+     * @param out
+     * @param completion
+     * @param id
+     * @param subscription
+     */
+    public static void handle(Flowable<ByteBuffer> flowable, Single<OutputStream> out,
+            Runnable completion, long id, Consumer<Subscription> subscription) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
-        HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id, downstream);
-        f.subscribe(subscriber);
+        HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id);
+        try {
+            subscription.accept(subscriber);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        flowable.subscribe(subscriber);
     }
 
     private static final class HandlerSubscriber extends AtomicInteger
@@ -35,7 +51,6 @@ public final class Handler {
         private static final long serialVersionUID = 1331107616659478552L;
 
         private final Single<OutputStream> outSource;
-        private final Subscription upstream;
         private OutputStream out;
         private final Runnable completion;
         private final long id;
@@ -48,12 +63,10 @@ public final class Handler {
         private volatile boolean cancelled;
         private Disposable disposable;
 
-        HandlerSubscriber(Single<OutputStream> outSource, Runnable completion, long id,
-                Subscription upstream) {
+        HandlerSubscriber(Single<OutputStream> outSource, Runnable completion, long id) {
             this.outSource = outSource;
             this.completion = completion;
             this.id = id;
-            this.upstream = upstream;
         }
 
         @Override
@@ -61,7 +74,7 @@ public final class Handler {
             this.parent = parent;
             outSource.subscribe(this);
         }
-        
+
         // SingleObserver for outSource
 
         @Override
@@ -81,7 +94,7 @@ public final class Handler {
             }
             drain();
         }
-        
+
         // end of SingleObserver
 
         @Override
