@@ -1,4 +1,4 @@
-package org.davidmoten.rx2.io;
+package org.davidmoten.rx2.io.internal;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;

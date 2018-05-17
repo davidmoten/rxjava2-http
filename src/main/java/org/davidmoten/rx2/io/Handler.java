@@ -8,6 +8,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.davidmoten.rx2.io.internal.NoCopyByteArrayOutputStream;
+import org.davidmoten.rx2.io.internal.Util;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -44,7 +46,7 @@ public final class Handler {
         }
         flowable.subscribe(subscriber);
     }
-
+     
     private static final class HandlerSubscriber extends AtomicInteger
             implements Subscriber<ByteBuffer>, Subscription, SingleObserver<OutputStream> {
 

@@ -1,9 +1,10 @@
-package org.davidmoten.rx2.io;
+package org.davidmoten.rx2.io.internal;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.reactivestreams.Subscriber;
@@ -14,17 +15,17 @@ import io.reactivex.exceptions.Exceptions;
 import io.reactivex.functions.BiConsumer;
 import io.reactivex.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.internal.util.BackpressureHelper;
+import io.reactivex.internal.util.EmptyComponent;
 import io.reactivex.plugins.RxJavaPlugins;
 
-public final class FlowableHttp extends Flowable<ByteBuffer> {
+public final class FlowableFromStream extends Flowable<ByteBuffer> {
 
     private final InputStream in;
     private final BiConsumer<Long, Long> requester;
     private final int bufferSize;
     private final int preRequest;
 
-    public FlowableHttp(InputStream in, BiConsumer<Long, Long> requester, int preRequest,
-            int bufferSize) {
+    public FlowableFromStream(InputStream in, BiConsumer<Long, Long> requester, int preRequest, int bufferSize) {
         this.in = in;
         this.requester = requester;
         this.preRequest = preRequest;
@@ -33,28 +34,28 @@ public final class FlowableHttp extends Flowable<ByteBuffer> {
 
     @Override
     protected void subscribeActual(Subscriber<? super ByteBuffer> subscriber) {
-        HttpSubscription subscription = new HttpSubscription(in, requester, preRequest, bufferSize,
-                subscriber);
+        FromStreamSubscriber subscription = new FromStreamSubscriber(in, requester, preRequest, bufferSize, subscriber);
         subscription.start();
     }
 
-    private static final class HttpSubscription extends AtomicLong implements Subscription {
+    private static final class FromStreamSubscriber extends AtomicInteger implements Subscription {
 
         private static final long serialVersionUID = 5917186677331992560L;
 
         private final InputStream in;
         private final int bufferSize;
         private final Subscriber<? super ByteBuffer> child;
+        private final AtomicLong requested = new AtomicLong();
+        private long id;
 
         private final int preRequest;
         private volatile boolean cancelled;
         private volatile Throwable error;
         private final BiConsumer<Long, Long> requester;
-        private long id;
+        private long emitted;
 
-
-        HttpSubscription(InputStream in, BiConsumer<Long, Long> requester, int preRequest,
-                int bufferSize, Subscriber<? super ByteBuffer> child) {
+        FromStreamSubscriber(InputStream in, BiConsumer<Long, Long> requester, int preRequest, int bufferSize,
+                Subscriber<? super ByteBuffer> child) {
             this.in = in;
             this.requester = requester;
             this.preRequest = preRequest;
@@ -63,62 +64,77 @@ public final class FlowableHttp extends Flowable<ByteBuffer> {
         }
 
         public void start() {
-            child.onSubscribe(this);
             try {
                 id = Util.readLong(in);
-                requester.accept(id, (long) preRequest);
+                if (preRequest > 0) {
+                    requester.accept(id, (long) preRequest);
+                }
             } catch (Throwable e) {
                 Exceptions.throwIfFatal(e);
                 closeStreamSilently();
+                child.onSubscribe(EmptyComponent.INSTANCE);
                 child.onError(e);
                 return;
             }
+            child.onSubscribe(this);
+            drain();
         }
 
         @Override
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
+                BackpressureHelper.add(requested, n);
                 try {
                     requester.accept(id, n);
-                } catch (Throwable e) {
-                    error = e;
+                } catch (Exception e) {
+                    Exceptions.throwIfFatal(e);
+                    closeStreamSilently();
+                    child.onError(e);
+                    return;
                 }
-                if (BackpressureHelper.add(this, n) == 0) {
-                    long r = get();
-                    while (true) {
-                        while (r > 0) {
-                            if (tryCancelled()) {
-                                return;
-                            }
-                            Throwable err = error;
-                            if (err != null) {
-                                error = null;
-                                child.onError(err);
-                                return;
-                            }
-                            // read some more
-                            byte[] b = new byte[bufferSize];
-                            try {
-                                int count = in.read(b);
-                                if (count == -1) {
-                                    closeStreamSilently();
-                                    child.onComplete();
-                                    return;
-                                } else {
-                                    child.onNext(ByteBuffer.wrap(b, 0, count));
-                                    r--;
-                                }
-                            } catch (Throwable e) {
-                                Exceptions.throwIfFatal(e);
-                                closeStreamSilently();
-                                child.onError(e);
-                                return;
-                            }
-                        }
-                        r = addAndGet(-r);
-                        if (r == 0) {
+                drain();
+            }
+        }
+
+        private void drain() {
+            if (getAndIncrement() == 0) {
+                int missed = 1;
+                while (true) {
+                    long r = requested.get();
+                    long e = emitted;
+                    while (e != r) {
+                        if (tryCancelled()) {
                             return;
                         }
+                        Throwable err = error;
+                        if (err != null) {
+                            error = null;
+                            child.onError(err);
+                            return;
+                        }
+                        // read some more
+                        byte[] b = new byte[bufferSize];
+                        try {
+                            int count = in.read(b);
+                            if (count == -1) {
+                                closeStreamSilently();
+                                child.onComplete();
+                                return;
+                            } else {
+                                child.onNext(ByteBuffer.wrap(b, 0, count));
+                                e++;
+                            }
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            closeStreamSilently();
+                            child.onError(ex);
+                            return;
+                        }
+                    }
+                    emitted = e;
+                    missed = addAndGet(-missed);
+                    if (missed == 0) {
+                        return;
                     }
                 }
             }

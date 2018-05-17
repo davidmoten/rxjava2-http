@@ -4,6 +4,9 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
 
+import org.davidmoten.rx2.io.internal.FlowableFromStream;
+import org.davidmoten.rx2.io.internal.Util;
+
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.functions.BiConsumer;
@@ -33,7 +36,7 @@ public final class Client {
     public static Flowable<ByteBuffer> read(Single<InputStream> inSource,
             BiConsumer<Long, Long> requester, int preRequest, int bufferSize) {
         return inSource
-                .flatMapPublisher(in -> new FlowableHttp(in, requester, preRequest, bufferSize));
+                .flatMapPublisher(in -> new FlowableFromStream(in, requester, preRequest, bufferSize));
     }
 
 }

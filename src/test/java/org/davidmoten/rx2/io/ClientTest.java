@@ -31,8 +31,7 @@ public class ClientTest {
         server.start();
 
         // Test GET
-        HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/r=100")
-                .openConnection();
+        HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/r=100").openConnection();
         con.setRequestMethod("GET");
         con.setUseCaches(false);
         BiConsumer<Long, Long> requester = createRequester();
@@ -50,11 +49,11 @@ public class ClientTest {
 
             @Override
             public void accept(Long id, Long request) throws Exception {
-                HttpURLConnection con = (HttpURLConnection) new URL(
-                        "http://localhost:8080/id=" + id + "&r=" + request).openConnection();
+                HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?id=" + id + "&r=" + request)
+                        .openConnection();
                 con.setRequestMethod("GET");
                 con.setUseCaches(false);
-
+                assertEquals(HttpStatus.OK_200, con.getResponseCode());
             }
         };
     }

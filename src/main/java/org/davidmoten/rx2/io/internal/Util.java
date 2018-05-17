@@ -1,4 +1,4 @@
-package org.davidmoten.rx2.io;
+package org.davidmoten.rx2.io.internal;
 
 import java.io.Closeable;
 import java.io.DataInputStream;
@@ -8,13 +8,13 @@ import java.io.InputStream;
 
 import io.reactivex.plugins.RxJavaPlugins;
 
-class Util {
+public class Util {
 
     private Util() {
         // prevent instantiation
     }
 
-    static long toLong(byte[] b) {
+    public static long toLong(byte[] b) {
         return (((long) b[0] << 56) //
                 + ((long) (b[1] & 255) << 48) //
                 + ((long) (b[2] & 255) << 40) //
@@ -25,7 +25,7 @@ class Util {
                 + ((b[7] & 255) << 0));
     }
 
-    static byte[] toBytes(long v) {
+    public static byte[] toBytes(long v) {
         byte[] b = new byte[8];
         b[0] = (byte) (v >>> 56);
         b[1] = (byte) (v >>> 48);
@@ -38,7 +38,7 @@ class Util {
         return b;
     }
 
-    static byte[] toBytes(int v) throws IOException {
+    public static byte[] toBytes(int v) throws IOException {
         byte[] b = new byte[4];
         b[0] = (byte) ((v >>> 24) & 0xFF);
         b[1] = (byte) ((v >>> 16) & 0xFF);
@@ -47,7 +47,7 @@ class Util {
         return b;
     }
 
-    static void close(Closeable c) {
+    public static void close(Closeable c) {
         if (c != null) {
             try {
                 c.close();
