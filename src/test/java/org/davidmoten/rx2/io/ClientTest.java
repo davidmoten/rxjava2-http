@@ -63,7 +63,7 @@ public class ClientTest {
                 b.write(bytes, 0, n);
             }
             in.close();
-            assertEquals(23, count);
+            assertEquals(15, count);
             System.out.println(Arrays.toString(b.toByteArray()));
         } finally {
             server.stop();

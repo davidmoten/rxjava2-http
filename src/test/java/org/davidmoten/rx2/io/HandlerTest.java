@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.davidmoten.rx2.io.internal.Util;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
@@ -31,7 +32,8 @@ public class HandlerTest {
         Consumer<Subscription> consumer = sub -> subscription.set(sub);
         Handler.handle(f, Single.just(out), DO_NOTHING, 2, consumer);
         subscription.get().request(1);
-        assertArrayEquals(new byte[] { 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 12 }, out.toByteArray());
+        System.out.println(Arrays.toString(out.toByteArray()));
+        assertArrayEquals(new byte[] { 0, 0, 0, 0, 0, 0, 0, 2, 12 }, out.toByteArray());
     }
 
     // @Test
@@ -41,12 +43,12 @@ public class HandlerTest {
     // InputStream in = new ByteArrayInputStream(Util.toBytes(1L));
     // ByteArrayOutputStream out = new ByteArrayOutputStream();
     // Flowable<ByteBuffer> f = Flowable.error(ex);
-    // Handler.handle(f, in, out);
+    // AtomicReference<Subscription> subscription = new
+    // AtomicReference<Subscription>();
+    // Consumer<Subscription> consumer = sub -> subscription.set(sub);
+    // Handler.handle(f, Single.just(out), DO_NOTHING, 2, consumer);
     // ByteArrayOutputStream expected = new ByteArrayOutputStream();
-    // expected.write(Util.toBytes(-exBytes.length));
     // expected.write(exBytes);
-    // assertArrayEquals(Arrays.copyOf(expected.toByteArray(), 4),
-    // Arrays.copyOf(out.toByteArray(), 4));
     // assertArrayEquals(expected.toByteArray(), out.toByteArray());
     // }
 

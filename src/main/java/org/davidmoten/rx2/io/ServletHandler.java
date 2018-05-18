@@ -19,17 +19,17 @@ import io.reactivex.Single;
 import io.reactivex.functions.Consumer;
 
 public final class ServletHandler {
-    
+
     private final Random random = new Random();
 
     private final Map<Long, Subscription> map = new ConcurrentHashMap<>();
 
     private final Flowable<ByteBuffer> flowable;
-    
+
     public static ServletHandler create(Flowable<ByteBuffer> flowable) {
         return new ServletHandler(flowable);
     }
-    
+
     private ServletHandler(Flowable<ByteBuffer> flowable) {
         this.flowable = flowable;
     }
@@ -58,10 +58,15 @@ public final class ServletHandler {
         if (request > 0) {
             map.get(id).request(request);
         }
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            // do nothing
+        }
     }
 
     private void handleRequest(long id, long request) {
-        System.out.println("received request for id="+ id + ", request="+ request);
+        System.out.println("received request for id=" + id + ", request=" + request);
         Subscription s = map.get(id);
         if (s != null) {
             s.request(request);
@@ -78,7 +83,7 @@ public final class ServletHandler {
         }
         return r;
     }
-    
+
     public void destroy() {
         for (Subscription sub : map.values()) {
             sub.cancel();
