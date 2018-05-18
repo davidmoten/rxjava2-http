@@ -13,7 +13,7 @@ public final class HandlerServlet extends FlowableHttpServlet {
     }
 
     private static Flowable<ByteBuffer> createFlowable() {
-        return Flowable.just(ByteBuffer.wrap(new byte[] { 1, 2, 3 }), ByteBuffer.wrap(new byte[] { 4, 5, 6 }));
+        return Flowable.just(ByteBuffer.wrap(new byte[] { 1, 2, 3 }), ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
     }
     
 }

@@ -37,7 +37,10 @@ public class ClientTest {
         BiConsumer<Long, Long> requester = createRequester();
         Client.read(Single.just(con.getInputStream()), requester, 0, 8192) //
                 .doOnNext(x -> System.out.println(x)) //
-                .subscribe();
+                .count() //
+                .test() //
+                .assertValue(n -> n > 0) //
+                .assertComplete();
         assertEquals(HttpStatus.OK_200, con.getResponseCode());
 
         // Stop Server

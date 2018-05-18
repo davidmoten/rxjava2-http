@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.davidmoten.rx2.io.internal.NoCopyByteArrayOutputStream;
@@ -34,8 +32,8 @@ public final class Handler {
      * @param id
      * @param subscription
      */
-    public static void handle(Flowable<ByteBuffer> flowable, Single<OutputStream> out,
-            Runnable completion, long id, Consumer<Subscription> subscription) {
+    public static void handle(Flowable<ByteBuffer> flowable, Single<OutputStream> out, Runnable completion, long id,
+            Consumer<Subscription> subscription) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
         HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id);
@@ -46,7 +44,7 @@ public final class Handler {
         }
         flowable.subscribe(subscriber);
     }
-     
+
     private static final class HandlerSubscriber extends AtomicInteger
             implements Subscriber<ByteBuffer>, Subscription, SingleObserver<OutputStream> {
 
@@ -56,7 +54,6 @@ public final class Handler {
         private OutputStream out;
         private final Runnable completion;
         private final long id;
-        private WritableByteChannel channel;
         private Subscription parent;
         private boolean done;
         private SimplePlainQueue<ByteBuffer> queue = new SpscLinkedArrayQueue<>(16);
@@ -87,7 +84,6 @@ public final class Handler {
         @Override
         public void onSuccess(OutputStream os) {
             this.out = os;
-            this.channel = Channels.newChannel(out);
             try {
                 out.write(Util.toBytes(id));
             } catch (IOException e) {
@@ -95,6 +91,19 @@ public final class Handler {
                 finished = true;
             }
             drain();
+        }
+
+        @Override
+        public void request(long n) {
+            parent.request(n);
+            drain();
+        }
+
+        @Override
+        public void cancel() {
+            disposable.dispose();
+            parent.cancel();
+            cancelled = true;
         }
 
         // end of SingleObserver
@@ -141,6 +150,7 @@ public final class Handler {
                         }
                         boolean d = finished;
                         ByteBuffer b = queue.poll();
+                        System.out.println("polled " + b);
                         if (b != null) {
                             try {
                                 writeOnNext(b);
@@ -191,8 +201,7 @@ public final class Handler {
                 System.out.println("sourceErrorBytes=" + bytes.size());
                 // mark as error by reporting length as negative
                 writeInt(out, -bytes.size());
-                channel.write(bytes.asByteBuffer());
-                channel.close();
+                out.write(bytes.toByteArray());
                 out.close();
             } catch (IOException e) {
                 RxJavaPlugins.onError(e);
@@ -201,23 +210,12 @@ public final class Handler {
 
         private void writeOnNext(ByteBuffer b) throws IOException {
             writeInt(out, b.remaining());
-            channel.write(b);
-        }
-
-        @Override
-        public void request(long n) {
-            parent.request(n);
-            drain();
-        }
-
-        @Override
-        public void cancel() {
-            disposable.dispose();
-            parent.cancel();
-            cancelled = true;
+            out.write(Util.toArray(b));
+            out.flush();
+            System.out.println("written to out");
         }
     }
-
+    
     private static void writeInt(OutputStream out, int v) throws IOException {
         out.write((v >>> 24) & 0xFF);
         out.write((v >>> 16) & 0xFF);

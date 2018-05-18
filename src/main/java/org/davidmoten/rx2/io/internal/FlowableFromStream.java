@@ -116,6 +116,7 @@ public final class FlowableFromStream extends Flowable<ByteBuffer> {
                         byte[] b = new byte[bufferSize];
                         try {
                             int count = in.read(b);
+                            System.out.println("read bytes="+ count);
                             if (count == -1) {
                                 closeStreamSilently();
                                 child.onComplete();

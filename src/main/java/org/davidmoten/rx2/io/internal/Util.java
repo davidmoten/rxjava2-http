@@ -1,10 +1,10 @@
 package org.davidmoten.rx2.io.internal;
 
 import java.io.Closeable;
-import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 import io.reactivex.plugins.RxJavaPlugins;
 
@@ -81,5 +81,13 @@ public class Util {
                 ((b[5] & 255) << 16) +
                 ((b[6] & 255) <<  8) +
                 ((b[7] & 255) <<  0));
+    }
+    
+    public static byte[] toArray(ByteBuffer bb) {
+        int p = bb.position();
+        byte[] bytes = new byte[bb.remaining()];
+        bb.get(bytes);
+        bb.position(p);
+        return bytes;
     }
 }
