@@ -37,21 +37,22 @@ public class HandlerTest {
                 out.toByteArray());
     }
 
-    // @Test
-    // public void testErrorStream() throws IOException {
-    // RuntimeException ex = new RuntimeException("boo");
-    // byte[] exBytes = serialize(ex);
-    // InputStream in = new ByteArrayInputStream(Util.toBytes(1L));
-    // ByteArrayOutputStream out = new ByteArrayOutputStream();
-    // Flowable<ByteBuffer> f = Flowable.error(ex);
-    // AtomicReference<Subscription> subscription = new
-    // AtomicReference<Subscription>();
-    // Consumer<Subscription> consumer = sub -> subscription.set(sub);
-    // Handler.handle(f, Single.just(out), DO_NOTHING, 2, consumer);
-    // ByteArrayOutputStream expected = new ByteArrayOutputStream();
-    // expected.write(exBytes);
-    // assertArrayEquals(expected.toByteArray(), out.toByteArray());
-    // }
+    @Test
+    public void testErrorStream() throws IOException {
+        RuntimeException ex = new RuntimeException("boo");
+        byte[] exBytes = serialize(ex);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Flowable<ByteBuffer> f = Flowable.error(ex);
+        AtomicReference<Subscription> subscription = new AtomicReference<Subscription>();
+        Consumer<Subscription> consumer = sub -> subscription.set(sub);
+        long id = 2;
+        Handler.handle(f, Single.just(out), DO_NOTHING, id, consumer);
+        ByteArrayOutputStream expected = new ByteArrayOutputStream();
+        expected.write(Util.toBytes(id));
+        expected.write(Util.toBytes(-exBytes.length));
+        expected.write(exBytes);
+        assertArrayEquals(expected.toByteArray(), out.toByteArray());
+    }
 
     private static byte[] serialize(Object o) throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();

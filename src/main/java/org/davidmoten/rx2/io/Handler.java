@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.davidmoten.rx2.io.internal.NoCopyByteArrayOutputStream;
@@ -32,8 +33,8 @@ public final class Handler {
      * @param id
      * @param subscription
      */
-    public static void handle(Flowable<ByteBuffer> flowable, Single<OutputStream> out, Runnable completion, long id,
-            Consumer<Subscription> subscription) {
+    public static void handle(Flowable<ByteBuffer> flowable, Single<OutputStream> out,
+            Runnable completion, long id, Consumer<Subscription> subscription) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
         HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id);
@@ -198,7 +199,6 @@ public final class Handler {
                 ObjectOutputStream oos = new ObjectOutputStream(bytes);
                 oos.writeObject(err);
                 oos.close();
-                System.out.println("sourceErrorBytes=" + bytes.size());
                 // mark as error by reporting length as negative
                 writeInt(out, -bytes.size());
                 out.write(bytes.toByteArray());
@@ -210,12 +210,12 @@ public final class Handler {
 
         private void writeOnNext(ByteBuffer b) throws IOException {
             writeInt(out, b.remaining());
-            out.write(Util.toArray(b));
+            out.write(Util.toBytes(b));
             out.flush();
             System.out.println("written to out");
         }
     }
-    
+
     private static void writeInt(OutputStream out, int v) throws IOException {
         out.write((v >>> 24) & 0xFF);
         out.write((v >>> 16) & 0xFF);

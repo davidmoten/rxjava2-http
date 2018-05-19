@@ -1,7 +1,6 @@
 package org.davidmoten.rx2.io.internal;
 
 import java.io.Closeable;
-import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -94,7 +93,7 @@ public class Util {
         return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
     }
     
-    public static byte[] toArray(ByteBuffer bb) {
+    public static byte[] toBytes(ByteBuffer bb) {
         int p = bb.position();
         byte[] bytes = new byte[bb.remaining()];
         bb.get(bytes);
