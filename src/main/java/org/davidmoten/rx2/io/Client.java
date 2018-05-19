@@ -26,7 +26,7 @@ public final class Client {
         return Flowable.using( //
                 () -> url.openConnection(), //
                 con -> read(Single.fromCallable(() -> con.getInputStream()), requester, preRequest,
-                        bufferSize), //
+                        bufferSize, true), //
                 con -> {
                     Util.close(con.getInputStream());
                     Util.close(con.getOutputStream());
@@ -34,9 +34,9 @@ public final class Client {
     }
 
     public static Flowable<ByteBuffer> read(Single<InputStream> inSource,
-            BiConsumer<Long, Long> requester, int preRequest, int bufferSize) {
-        return inSource
-                .flatMapPublisher(in -> new FlowableFromStream(in, requester, preRequest, bufferSize));
+            BiConsumer<Long, Long> requester, int preRequest, int bufferSize, boolean retainSizes) {
+        return inSource.flatMapPublisher(
+                in -> new FlowableFromStream(in, requester, preRequest, bufferSize, retainSizes));
     }
 
 }

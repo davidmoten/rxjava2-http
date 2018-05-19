@@ -25,7 +25,7 @@ public final class FlowableFromStream extends Flowable<ByteBuffer> {
     private final int bufferSize;
     private final int preRequest;
 
-    public FlowableFromStream(InputStream in, BiConsumer<Long, Long> requester, int preRequest, int bufferSize) {
+    public FlowableFromStream(InputStream in, BiConsumer<Long, Long> requester, int preRequest, int bufferSize, boolean retainSizes) {
         this.in = in;
         this.requester = requester;
         this.preRequest = preRequest;

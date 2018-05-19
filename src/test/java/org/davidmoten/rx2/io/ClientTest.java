@@ -30,11 +30,11 @@ public class ClientTest {
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             BiConsumer<Long, Long> requester = createRequester();
-            Client.read(Single.just(con.getInputStream()), requester, 0, 8192) //
+            Client.read(Single.just(con.getInputStream()), requester, 0, 8192, true) //
                     .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
-                    .assertValue(7) //
+                    .assertValue(4 + 3 + 4 + 4) // length + bytes + length + bytes
                     .assertComplete();
             assertEquals(HttpStatus.OK_200, con.getResponseCode());
         } finally {
@@ -63,8 +63,8 @@ public class ClientTest {
                 b.write(bytes, 0, n);
             }
             in.close();
-            assertEquals(15, count);
             System.out.println(Arrays.toString(b.toByteArray()));
+            assertEquals(23, count);
         } finally {
             server.stop();
         }

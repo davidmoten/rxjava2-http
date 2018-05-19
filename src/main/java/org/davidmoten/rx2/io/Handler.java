@@ -209,6 +209,7 @@ public final class Handler {
         }
 
         private void writeOnNext(ByteBuffer b) throws IOException {
+            writeInt(out, b.remaining());
             out.write(Util.toArray(b));
             out.flush();
             System.out.println("written to out");
