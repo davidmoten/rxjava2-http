@@ -6,6 +6,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -15,14 +16,18 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 
+import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.functions.BiConsumer;
 
 public class ClientTest {
 
+    private static final Flowable<ByteBuffer> SOURCE = Flowable.just(
+            ByteBuffer.wrap(new byte[] { 1, 2, 3 }), ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
+
     @Test
     public void testGetWithClient() throws Exception {
-        Server server = createServer();
+        Server server = createServer(SOURCE);
         try {
             // Test GET
             HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100")
@@ -45,8 +50,24 @@ public class ClientTest {
     }
 
     @Test
+    public void testGetEmptyStream() throws Exception {
+        Server server = createServer(Flowable.empty());
+        try {
+            // Test GETs
+            Client.get("http://localhost:8080/") //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertNoValues() //
+                    .assertComplete();
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
     public void testGetWithClientAbbreviated() throws Exception {
-        Server server = createServer();
+        Server server = createServer(SOURCE);
         try {
             // Test GETs
             Client.get("http://localhost:8080/", 100) //
@@ -64,7 +85,7 @@ public class ClientTest {
 
     @Test
     public void testSimpleGet() throws Exception {
-        Server server = createServer();
+        Server server = createServer(SOURCE);
         try {
             // Start Server
             server.start();
@@ -89,7 +110,7 @@ public class ClientTest {
         }
     }
 
-    private static Server createServer() {
+    private static Server createServer(Flowable<ByteBuffer> flowable) {
         // Create Server
         Server server = new Server(8080);
         ServletContextHandler context = new ServletContextHandler();
@@ -98,6 +119,7 @@ public class ClientTest {
         defaultServ.setInitParameter("dirAllowed", "true");
         context.addServlet(defaultServ, "/");
         server.setHandler(context);
+        HandlerServlet.flowable = flowable;
         try {
             server.start();
         } catch (Exception e) {

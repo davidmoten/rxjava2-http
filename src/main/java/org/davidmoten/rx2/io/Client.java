@@ -21,6 +21,10 @@ public final class Client {
         return get(url, preRequest).map(bb -> serializer.deserialize(bb));
     }
 
+    public static Flowable<ByteBuffer> get(String url) {
+        return get(url, 16);
+    }
+
     public static Flowable<ByteBuffer> get(String url, int preRequest) {
         final URL u;
         try {

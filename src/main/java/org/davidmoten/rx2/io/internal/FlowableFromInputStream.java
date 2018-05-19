@@ -176,6 +176,15 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         @Override
         public void cancel() {
             cancelled = true;
+            try {
+                // a negative request cancels the stream
+                requester.accept(id, -1L);
+            } catch (Exception e) {
+                Exceptions.throwIfFatal(e);
+                closeStreamSilently();
+                child.onError(e);
+                return;
+            }
         }
 
     }

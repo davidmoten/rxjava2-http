@@ -69,7 +69,11 @@ public final class ServletHandler {
     private void handleRequest(long id, long request) {
         Subscription s = map.get(id);
         if (s != null) {
-            s.request(request);
+            if (request > 0) {
+                s.request(request);
+            } else if (request < 0) {
+                s.cancel();
+            }
         }
     }
 
