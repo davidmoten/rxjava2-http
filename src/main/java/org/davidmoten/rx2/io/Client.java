@@ -45,12 +45,14 @@ public final class Client {
         };
 
         return Flowable.using( //
-                () -> u.openConnection(), //
+                () -> {
+                    HttpURLConnection con = (HttpURLConnection) u.openConnection();
+                    con.setRequestMethod("GET");
+                    con.setUseCaches(false);
+                    return con;
+                }, //
                 con -> read(Single.fromCallable(() -> con.getInputStream()), requester), //
-                con -> {
-                    Util.close(con.getInputStream());
-                    Util.close(con.getOutputStream());
-                });
+                con -> Util.close(con.getInputStream()));
     }
 
     public static Flowable<ByteBuffer> read(Single<InputStream> inSource,

@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
@@ -33,9 +34,28 @@ public class ClientTest {
                     .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
                     .assertValue(3 + 4) //
                     .assertComplete();
             assertEquals(HttpStatus.OK_200, con.getResponseCode());
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testGetWithClientAbbreviated() throws Exception {
+        Server server = createServer();
+        try {
+            // Test GETs
+            Client.read("http://localhost:8080/", 100) //
+                    .doOnNext(x -> System.out.println(x)) //
+                    .reduce(0, (x, bb) -> x + bb.remaining()) //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertValue(3 + 4) //
+                    .assertComplete();
         } finally {
             // Stop Server
             server.stop();
