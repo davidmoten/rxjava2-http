@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.davidmoten.rx2.io.internal.NoCopyByteArrayOutputStream;
@@ -23,16 +22,6 @@ import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Handler {
 
-    /**
-     * Subscribes to {@code out} to obtain an {@link OutputStream}. The first 8
-     * bytes written to the {@code OutputStream} are the id of the stream.
-     * 
-     * @param flowable
-     * @param out
-     * @param completion
-     * @param id
-     * @param subscription
-     */
     public static void handle(Flowable<ByteBuffer> flowable, Single<OutputStream> out,
             Runnable completion, long id, Consumer<Subscription> subscription) {
         // when first request read (8 bytes) subscribe to Flowable

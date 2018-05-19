@@ -1,6 +1,5 @@
 package org.davidmoten.rx2.io;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayOutputStream;
@@ -21,7 +20,7 @@ import io.reactivex.functions.BiConsumer;
 public class ClientTest {
 
     @Test
-    public void test() throws Exception {
+    public void testGetWithClient() throws Exception {
         Server server = createServer();
         try {
             // Test GET
@@ -30,7 +29,7 @@ public class ClientTest {
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             BiConsumer<Long, Long> requester = createRequester();
-            Client.read(Single.just(con.getInputStream()), requester, 0, 8192, true) //
+            Client.read(Single.just(con.getInputStream()), requester) //
                     .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //

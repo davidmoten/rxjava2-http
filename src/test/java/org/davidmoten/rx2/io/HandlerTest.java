@@ -2,10 +2,8 @@ package org.davidmoten.rx2.io;
 
 import static org.junit.Assert.assertArrayEquals;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;

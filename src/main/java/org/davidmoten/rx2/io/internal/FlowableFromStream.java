@@ -23,21 +23,15 @@ public final class FlowableFromStream extends Flowable<ByteBuffer> {
 
     private final InputStream in;
     private final BiConsumer<Long, Long> requester;
-    private final int bufferSize;
-    private final int preRequest;
 
-    public FlowableFromStream(InputStream in, BiConsumer<Long, Long> requester, int preRequest,
-            int bufferSize, boolean retainSizes) {
+    public FlowableFromStream(InputStream in, BiConsumer<Long, Long> requester) {
         this.in = in;
         this.requester = requester;
-        this.preRequest = preRequest;
-        this.bufferSize = bufferSize;
     }
 
     @Override
     protected void subscribeActual(Subscriber<? super ByteBuffer> subscriber) {
-        FromStreamSubscriber subscription = new FromStreamSubscriber(in, requester, preRequest,
-                bufferSize, subscriber);
+        FromStreamSubscriber subscription = new FromStreamSubscriber(in, requester, subscriber);
         subscription.start();
     }
 
@@ -46,12 +40,10 @@ public final class FlowableFromStream extends Flowable<ByteBuffer> {
         private static final long serialVersionUID = 5917186677331992560L;
 
         private final InputStream in;
-        private final int bufferSize;
         private final Subscriber<? super ByteBuffer> child;
         private final AtomicLong requested = new AtomicLong();
         private long id;
 
-        private final int preRequest;
         private volatile boolean cancelled;
         private volatile Throwable error;
         private final BiConsumer<Long, Long> requester;
@@ -60,21 +52,16 @@ public final class FlowableFromStream extends Flowable<ByteBuffer> {
         private byte[] buffer;
         private int bufferIndex;
 
-        FromStreamSubscriber(InputStream in, BiConsumer<Long, Long> requester, int preRequest,
-                int bufferSize, Subscriber<? super ByteBuffer> child) {
+        FromStreamSubscriber(InputStream in, BiConsumer<Long, Long> requester,
+                Subscriber<? super ByteBuffer> child) {
             this.in = in;
             this.requester = requester;
-            this.preRequest = preRequest;
-            this.bufferSize = bufferSize;
             this.child = child;
         }
 
         public void start() {
             try {
                 id = Util.readLong(in);
-                if (preRequest > 0) {
-                    requester.accept(id, (long) preRequest);
-                }
             } catch (Throwable e) {
                 Exceptions.throwIfFatal(e);
                 closeStreamSilently();
