@@ -29,7 +29,6 @@ public class ClientTest {
     public void testGetWithClient() throws Exception {
         Server server = createServer(SOURCE);
         try {
-            // Test GET
             HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100")
                     .openConnection();
             con.setRequestMethod("GET");
@@ -53,7 +52,6 @@ public class ClientTest {
     public void testGetEmptyStream() throws Exception {
         Server server = createServer(Flowable.empty());
         try {
-            // Test GETs
             Client.get("http://localhost:8080/") //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
@@ -71,11 +69,27 @@ public class ClientTest {
                 Flowable.timer(300, TimeUnit.MILLISECONDS) //
                         .map(x -> ByteBuffer.wrap(new byte[] { 1 })));
         try {
-            // Test GETs
             Client.get("http://localhost:8080/") //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
                     .assertValueCount(1) //
+                    .assertComplete();
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testCancel() throws Exception {
+        Server server = createServer(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })).repeat());
+        try {
+            Client.get("http://localhost:8080/") //
+                    .take(20) //
+                    .doOnNext(System.out::println) //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertValueCount(20) //
                     .assertComplete();
         } finally {
             // Stop Server

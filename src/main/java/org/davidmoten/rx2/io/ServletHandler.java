@@ -36,6 +36,7 @@ public final class ServletHandler {
 
     public void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
+        System.out.println(req);
         String idString = req.getParameter("id");
         if (idString == null) {
             final long r = getRequest(req);
@@ -57,7 +58,10 @@ public final class ServletHandler {
         Consumer<Subscription> subscription = sub -> map.put(id, sub);
         Server.handle(flowable, Single.just(out), done, id, subscription);
         if (request > 0) {
-            map.get(id).request(request);
+            Subscription sub = map.get(id);
+            if (sub != null) {
+                sub.request(request);
+            }
         }
         try {
             latch.await();
