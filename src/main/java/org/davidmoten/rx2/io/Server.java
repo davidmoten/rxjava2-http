@@ -20,13 +20,13 @@ import io.reactivex.internal.fuseable.SimplePlainQueue;
 import io.reactivex.internal.queue.SpscLinkedArrayQueue;
 import io.reactivex.plugins.RxJavaPlugins;
 
-public final class Handler {
+public final class Server {
 
     public static void handle(Flowable<ByteBuffer> flowable, Single<OutputStream> out,
-            Runnable completion, long id, Consumer<Subscription> subscription) {
+            Runnable done, long id, Consumer<Subscription> subscription) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
-        HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id);
+        HandlerSubscriber subscriber = new HandlerSubscriber(out, done, id);
         try {
             subscription.accept(subscriber);
         } catch (Exception e) {
@@ -140,7 +140,6 @@ public final class Handler {
                         }
                         boolean d = finished;
                         ByteBuffer b = queue.poll();
-                        System.out.println("polled " + b);
                         if (b != null) {
                             try {
                                 writeOnNext(b);
@@ -184,13 +183,14 @@ public final class Handler {
 
         private void writeError(Throwable err) {
             try {
-                NoCopyByteArrayOutputStream bytes = new NoCopyByteArrayOutputStream();
+                // set initial size to cover size of most stack traces
+                NoCopyByteArrayOutputStream bytes = new NoCopyByteArrayOutputStream(4096);
                 ObjectOutputStream oos = new ObjectOutputStream(bytes);
                 oos.writeObject(err);
                 oos.close();
                 // mark as error by reporting length as negative
                 writeInt(out, -bytes.size());
-                out.write(bytes.toByteArray());
+                bytes.write(out);
                 out.close();
             } catch (IOException e) {
                 RxJavaPlugins.onError(e);
@@ -201,7 +201,6 @@ public final class Handler {
             writeInt(out, b.remaining());
             out.write(Util.toBytes(b));
             out.flush();
-            System.out.println("written to out");
         }
     }
 

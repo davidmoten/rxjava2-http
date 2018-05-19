@@ -19,12 +19,12 @@ import io.reactivex.internal.util.BackpressureHelper;
 import io.reactivex.internal.util.EmptyComponent;
 import io.reactivex.plugins.RxJavaPlugins;
 
-public final class FlowableFromStream extends Flowable<ByteBuffer> {
+public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
     private final InputStream in;
     private final BiConsumer<Long, Long> requester;
 
-    public FlowableFromStream(InputStream in, BiConsumer<Long, Long> requester) {
+    public FlowableFromInputStream(InputStream in, BiConsumer<Long, Long> requester) {
         this.in = in;
         this.requester = requester;
     }
@@ -124,7 +124,6 @@ public final class FlowableFromStream extends Flowable<ByteBuffer> {
                         try {
                             int count = in.read(buffer, bufferIndex, length - bufferIndex);
                             bufferIndex += count;
-                            System.out.println("read bytes=" + count);
                             if (count == -1) {
                                 closeStreamSilently();
                                 child.onError(new EOFException(

@@ -7,7 +7,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 
-import org.davidmoten.rx2.io.internal.FlowableFromStream;
+import org.davidmoten.rx2.io.internal.FlowableFromInputStream;
 import org.davidmoten.rx2.io.internal.Util;
 
 import io.reactivex.Flowable;
@@ -60,7 +60,7 @@ public final class Client {
 
     public static Flowable<ByteBuffer> read(Single<InputStream> inSource,
             BiConsumer<Long, Long> requester) {
-        return inSource.flatMapPublisher(in -> new FlowableFromStream(in, requester));
+        return inSource.flatMapPublisher(in -> new FlowableFromInputStream(in, requester));
     }
 
 }

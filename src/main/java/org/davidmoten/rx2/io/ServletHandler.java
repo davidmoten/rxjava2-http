@@ -36,7 +36,6 @@ public final class ServletHandler {
 
     public void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        System.out.println(req);
         String idString = req.getParameter("id");
         if (idString == null) {
             final long r = getRequest(req);
@@ -49,12 +48,14 @@ public final class ServletHandler {
     }
 
     private void handleStream(OutputStream out, long request) {
-        System.out.println("stream");
         CountDownLatch latch = new CountDownLatch(1);
-        Runnable completion = () -> latch.countDown();
         long id = random.nextLong();
+        Runnable done = () -> {
+            map.remove(id);
+            latch.countDown();
+        };
         Consumer<Subscription> subscription = sub -> map.put(id, sub);
-        Handler.handle(flowable, Single.just(out), completion, id, subscription);
+        Server.handle(flowable, Single.just(out), done, id, subscription);
         if (request > 0) {
             map.get(id).request(request);
         }
@@ -66,7 +67,6 @@ public final class ServletHandler {
     }
 
     private void handleRequest(long id, long request) {
-        System.out.println("received request for id=" + id + ", request=" + request);
         Subscription s = map.get(id);
         if (s != null) {
             s.request(request);
