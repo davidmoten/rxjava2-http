@@ -33,7 +33,8 @@ public class HandlerTest {
         Handler.handle(f, Single.just(out), DO_NOTHING, 2, consumer);
         subscription.get().request(1);
         System.out.println(Arrays.toString(out.toByteArray()));
-        assertArrayEquals(new byte[] { 0, 0, 0, 0, 0, 0, 0, 2, 12 }, out.toByteArray());
+        assertArrayEquals(new byte[] { 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 12 }, // id=2,length=1,byte=12
+                out.toByteArray());
     }
 
     // @Test

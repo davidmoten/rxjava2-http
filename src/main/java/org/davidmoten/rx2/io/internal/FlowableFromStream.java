@@ -1,6 +1,7 @@
 package org.davidmoten.rx2.io.internal;
 
 import java.io.Closeable;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -25,7 +26,8 @@ public final class FlowableFromStream extends Flowable<ByteBuffer> {
     private final int bufferSize;
     private final int preRequest;
 
-    public FlowableFromStream(InputStream in, BiConsumer<Long, Long> requester, int preRequest, int bufferSize, boolean retainSizes) {
+    public FlowableFromStream(InputStream in, BiConsumer<Long, Long> requester, int preRequest,
+            int bufferSize, boolean retainSizes) {
         this.in = in;
         this.requester = requester;
         this.preRequest = preRequest;
@@ -34,7 +36,8 @@ public final class FlowableFromStream extends Flowable<ByteBuffer> {
 
     @Override
     protected void subscribeActual(Subscriber<? super ByteBuffer> subscriber) {
-        FromStreamSubscriber subscription = new FromStreamSubscriber(in, requester, preRequest, bufferSize, subscriber);
+        FromStreamSubscriber subscription = new FromStreamSubscriber(in, requester, preRequest,
+                bufferSize, subscriber);
         subscription.start();
     }
 
@@ -53,9 +56,12 @@ public final class FlowableFromStream extends Flowable<ByteBuffer> {
         private volatile Throwable error;
         private final BiConsumer<Long, Long> requester;
         private long emitted;
+        private int length = 0;
+        private byte[] buffer;
+        private int bufferIndex;
 
-        FromStreamSubscriber(InputStream in, BiConsumer<Long, Long> requester, int preRequest, int bufferSize,
-                Subscriber<? super ByteBuffer> child) {
+        FromStreamSubscriber(InputStream in, BiConsumer<Long, Long> requester, int preRequest,
+                int bufferSize, Subscriber<? super ByteBuffer> child) {
             this.in = in;
             this.requester = requester;
             this.preRequest = preRequest;
@@ -109,20 +115,37 @@ public final class FlowableFromStream extends Flowable<ByteBuffer> {
                         Throwable err = error;
                         if (err != null) {
                             error = null;
+                            closeStreamSilently();
                             child.onError(err);
                             return;
                         }
                         // read some more
-                        byte[] b = new byte[bufferSize];
-                        try {
-                            int count = in.read(b);
-                            System.out.println("read bytes="+ count);
-                            if (count == -1) {
+                        if (buffer == null) {
+                            try {
+                                length = Util.readInt(in);
+                            } catch (EOFException e1) {
                                 closeStreamSilently();
                                 child.onComplete();
                                 return;
-                            } else {
-                                child.onNext(ByteBuffer.wrap(b, 0, count));
+                            } catch (IOException e1) {
+                                closeStreamSilently();
+                                child.onError(e1);
+                                return;
+                            }
+                            buffer = new byte[length];
+                        }
+                        try {
+                            int count = in.read(buffer, bufferIndex, length - bufferIndex);
+                            bufferIndex += count;
+                            System.out.println("read bytes=" + count);
+                            if (count == -1) {
+                                closeStreamSilently();
+                                child.onError(new EOFException(
+                                        "encountered EOF before expected length was read"));
+                                return;
+                            } else if (bufferIndex == length) {
+                                child.onNext(ByteBuffer.wrap(buffer, 0, length));
+                                buffer = null;
                                 e++;
                             }
                         } catch (Throwable ex) {

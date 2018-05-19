@@ -34,7 +34,7 @@ public class ClientTest {
                     .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
-                    .assertValue(4 + 3 + 4 + 4) // length + bytes + length + bytes
+                    .assertValue(3 + 4) //
                     .assertComplete();
             assertEquals(HttpStatus.OK_200, con.getResponseCode());
         } finally {
