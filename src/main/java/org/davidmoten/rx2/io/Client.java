@@ -1,7 +1,6 @@
 package org.davidmoten.rx2.io;
 
-import static org.junit.Assert.assertEquals;
-
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -10,11 +9,11 @@ import java.nio.ByteBuffer;
 
 import org.davidmoten.rx2.io.internal.FlowableFromStream;
 import org.davidmoten.rx2.io.internal.Util;
-import org.eclipse.jetty.http.HttpStatus;
 
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.functions.BiConsumer;
+import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Client {
 
@@ -39,7 +38,11 @@ public final class Client {
                                 .openConnection();
                 con.setRequestMethod("GET");
                 con.setUseCaches(false);
-                assertEquals(HttpStatus.OK_200, con.getResponseCode());
+                int code = con.getResponseCode();
+                if (code != 200) {
+                    RxJavaPlugins.onError(new IOException(
+                            "response code from request call was not 200: " + code));
+                }
             }
 
         };
