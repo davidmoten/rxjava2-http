@@ -17,6 +17,10 @@ import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Client {
 
+    public static <T> Flowable<T> get(String url, int preRequest, Serializer<T> serializer) {
+        return get(url, preRequest).map(bb -> serializer.deserialize(bb));
+    }
+
     public static Flowable<ByteBuffer> get(String url, int preRequest) {
         final URL u;
         try {
