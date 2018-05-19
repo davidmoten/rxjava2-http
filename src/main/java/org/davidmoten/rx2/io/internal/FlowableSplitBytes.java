@@ -1,4 +1,4 @@
-package org.davidmoten.rx2.io;
+package org.davidmoten.rx2.io.internal;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
