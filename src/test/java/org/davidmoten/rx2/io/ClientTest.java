@@ -66,6 +66,24 @@ public class ClientTest {
     }
 
     @Test
+    public void testGetAsynchronousSource() throws Exception {
+        Server server = createServer( //
+                Flowable.timer(300, TimeUnit.MILLISECONDS) //
+                        .map(x -> ByteBuffer.wrap(new byte[] { 1 })));
+        try {
+            // Test GETs
+            Client.get("http://localhost:8080/") //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertValueCount(1) //
+                    .assertComplete();
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
     public void testGetWithClientAbbreviated() throws Exception {
         Server server = createServer(SOURCE);
         try {
