@@ -17,7 +17,7 @@ import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Client {
 
-    public static Flowable<ByteBuffer> read(String url, int preRequest) {
+    public static Flowable<ByteBuffer> get(String url, int preRequest) {
         final URL u;
         try {
             if (preRequest == 0) {
@@ -52,10 +52,10 @@ public final class Client {
                     HttpURLConnection con = (HttpURLConnection) u.openConnection();
                     con.setRequestMethod("GET");
                     con.setUseCaches(false);
-                    return con;
+                    return con.getInputStream();
                 }, //
-                con -> read(Single.fromCallable(() -> con.getInputStream()), requester), //
-                con -> Util.close(con.getInputStream()));
+                in -> read(Single.just(in), requester), //
+                in -> Util.close(in));
     }
 
     public static Flowable<ByteBuffer> read(Single<InputStream> inSource,

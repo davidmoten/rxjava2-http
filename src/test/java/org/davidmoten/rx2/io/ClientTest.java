@@ -49,7 +49,7 @@ public class ClientTest {
         Server server = createServer();
         try {
             // Test GETs
-            Client.read("http://localhost:8080/", 100) //
+            Client.get("http://localhost:8080/", 100) //
                     .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
