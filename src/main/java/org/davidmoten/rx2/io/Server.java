@@ -91,9 +91,10 @@ public final class Server {
 
         @Override
         public void cancel() {
+            cancelled = true;
             disposable.dispose();
             parent.cancel();
-            cancelled = true;
+            completion.run();
         }
 
         // end of SingleObserver
