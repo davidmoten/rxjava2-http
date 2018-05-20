@@ -22,7 +22,7 @@ Path | Action | Returns
 /?id=ID&r=REQUEST | request more from given stream | nothing
 /?id=ID&r=-1 | cancel given stream | nothing
 
-The format returned in the subscribe calls is:
+The format returned in the subscribe calls is (EBNF):
 
 ```
 Stream = Id {Item} [ Error | Complete ];
