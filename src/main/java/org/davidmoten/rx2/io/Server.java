@@ -182,6 +182,7 @@ public final class Server {
 
         private void doOnComplete() {
             try {
+                // send the bytes -128, 0, 0, 0 to indicate completion
                 writeInt(out, Integer.MIN_VALUE);
             } catch (IOException e) {
                 RxJavaPlugins.onError(e);
