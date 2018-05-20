@@ -91,9 +91,13 @@ public final class Server {
 
         @Override
         public void cancel() {
-            cancelled = true;
-            disposable.dispose();
-            parent.cancel();
+            try {
+                cancelled = true;
+                disposable.dispose();
+                parent.cancel();
+            } finally {
+                Util.close(out);
+            }
             completion.run();
         }
 
@@ -160,13 +164,7 @@ public final class Server {
                                 completion.run();
                                 return;
                             } else {
-                                parent.cancel();
-                                queue.clear();
-                                try {
-                                    out.close();
-                                } catch (IOException e) {
-                                    RxJavaPlugins.onError(e);
-                                }
+                                doOnComplete();
                                 completion.run();
                                 return;
                             }
@@ -182,6 +180,16 @@ public final class Server {
             }
         }
 
+        private void doOnComplete() {
+            try {
+                writeInt(out, Integer.MIN_VALUE);
+            } catch (IOException e) {
+                RxJavaPlugins.onError(e);
+            } finally {
+                Util.close(out);
+            }
+        }
+
         private void writeError(Throwable err) {
             try {
                 // set initial size to cover size of most stack traces
@@ -192,9 +200,10 @@ public final class Server {
                 // mark as error by reporting length as negative
                 writeInt(out, -bytes.size());
                 bytes.write(out);
-                out.close();
             } catch (IOException e) {
                 RxJavaPlugins.onError(e);
+            } finally {
+                Util.close(out);
             }
         }
 

@@ -136,7 +136,7 @@ public class ClientTest {
             }
             in.close();
             System.out.println(Arrays.toString(b.toByteArray()));
-            assertEquals(23, count);
+            assertEquals(27, count);
         } finally {
             server.stop();
         }

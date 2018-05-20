@@ -111,13 +111,14 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                             try {
                                 length = Util.readInt(in);
                                 System.out.println("length=" + length);
-                            } catch (EOFException e1) {
-                                closeStreamSilently();
-                                child.onComplete();
-                                return;
                             } catch (IOException e1) {
                                 closeStreamSilently();
                                 child.onError(e1);
+                                return;
+                            }
+                            if (length == Integer.MIN_VALUE) {
+                                closeStreamSilently();
+                                child.onComplete();
                                 return;
                             }
                             buffer = new byte[length];

@@ -23,7 +23,7 @@ public class HandlerTest {
     };
 
     @Test
-    public void testOneByteStream() {
+    public void testOneByteStream() throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Flowable<ByteBuffer> f = Flowable.just(ByteBuffer.wrap(new byte[] { 12 }));
         AtomicReference<Subscription> subscription = new AtomicReference<Subscription>();
@@ -31,7 +31,7 @@ public class HandlerTest {
         Server.handle(f, Single.just(out), DO_NOTHING, 2, consumer);
         subscription.get().request(1);
         System.out.println(Arrays.toString(out.toByteArray()));
-        assertArrayEquals(new byte[] { 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 12 }, // id=2,length=1,byte=12
+        assertArrayEquals(new byte[] { 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 12, -128, 0, 0, 0 }, // id=2,length=1,byte=12
                 out.toByteArray());
     }
 
