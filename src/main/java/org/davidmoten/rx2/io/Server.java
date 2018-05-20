@@ -151,7 +151,9 @@ public final class Server {
                             } catch (Throwable e) {
                                 parent.cancel();
                                 queue.clear();
-                                writeError(e);
+                                if (!cancelled) {
+                                    writeError(e);
+                                }
                                 return;
                             }
                         } else if (d) {
@@ -198,6 +200,7 @@ public final class Server {
                 ObjectOutputStream oos = new ObjectOutputStream(bytes);
                 oos.writeObject(err);
                 oos.close();
+
                 // mark as error by reporting length as negative
                 writeInt(out, -bytes.size());
                 bytes.write(out);
