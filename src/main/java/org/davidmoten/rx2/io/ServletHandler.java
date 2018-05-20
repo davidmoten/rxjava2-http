@@ -36,7 +36,6 @@ public final class ServletHandler {
 
     public void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        System.out.println(req);
         String idString = req.getParameter("id");
         if (idString == null) {
             final long r = getRequest(req);

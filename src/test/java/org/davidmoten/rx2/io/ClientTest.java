@@ -86,7 +86,6 @@ public class ClientTest {
         try {
             Client.get("http://localhost:8080/") //
                     .take(20) //
-                    .doOnNext(System.out::println) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
                     .assertValueCount(20) //
@@ -101,9 +100,7 @@ public class ClientTest {
     public void testGetWithClientAbbreviated() throws Exception {
         Server server = createServer(SOURCE);
         try {
-            // Test GETs
             Client.get("http://localhost:8080/", 100) //
-                    .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //

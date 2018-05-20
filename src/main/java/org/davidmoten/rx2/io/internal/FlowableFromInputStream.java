@@ -110,7 +110,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                         if (buffer == null) {
                             try {
                                 length = Util.readInt(in);
-                                System.out.println("length=" + length);
                             } catch (IOException e1) {
                                 closeStreamSilently();
                                 child.onError(e1);
@@ -127,7 +126,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                         try {
                             int count = in.read(buffer, bufferIndex, length - bufferIndex);
                             bufferIndex += count;
-                            System.out.println("bufferIndex=" + bufferIndex);
                             if (count == -1) {
                                 closeStreamSilently();
                                 child.onError(new EOFException(
