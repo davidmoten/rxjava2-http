@@ -42,8 +42,12 @@ public final class Client {
             return this;
         }
 
-        public <T extends Serializable> Flowable<T> serializer(Serializer<T> serializer) {
+        public <T> Flowable<T> serializer(Serializer<T> serializer) {
             return get(url, delayErrors, bufferSize, serializer);
+        }
+
+        public <T extends Serializable> Flowable<T> serialized() {
+            return serializer(DefaultSerializer.instance());
         }
 
         public Flowable<ByteBuffer> build() {

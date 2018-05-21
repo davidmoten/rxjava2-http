@@ -106,11 +106,12 @@ public class ClientTest {
         Server server = createServer(flowable);
         try {
             Client.get("http://localhost:8080/") // s
-                    .serializer(DefaultSerializer.<Integer>instance()) //
-                    .take(20) //
+                    .<Integer>serialized() //
+                    .skip(500) //
+                    .take(4) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
-                    .assertValueCount(20) //
+                    .assertValues(501, 502, 503, 504) //
                     .assertComplete();
         } finally {
             // Stop Server
@@ -124,8 +125,7 @@ public class ClientTest {
         try {
             Client.get("http://localhost:8080/") //
                     .bufferSize(100) //
-                    .build()
-                    .reduce(0, (x, bb) -> x + bb.remaining()) //
+                    .build().reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
                     .assertValue(3 + 4) //
