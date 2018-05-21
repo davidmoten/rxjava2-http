@@ -5,7 +5,7 @@ Status: *pre-alpha* (in development)
 
 ## Design
 
-Interested in vanilla HTTP support for starters. WebSockets is a natural for this but can be blocked by corporate firewalls (mine does).
+WebSockets is a natural for this but can be blocked by corporate firewalls so this library starts with support for HTTP 1.0. 
 
 Need API support for these actions:
 
@@ -17,10 +17,10 @@ This support is provided via these URL paths
 
 Path | Action | Returns
 --- | --- | ---
-/   | subscribe with no request | Stream ID then binary stream
-/?r=REQUEST | subscribe with initial request | Stream ID then binary stream
-/?id=ID&r=REQUEST | request more from given stream | nothing
-/?id=ID&r=-1 | cancel given stream | nothing
+`/`   | subscribe with no request | Stream ID then binary stream
+`/?r=REQUEST` | subscribe with initial request | Stream ID then binary stream
+`/?id=ID&r=REQUEST` | request more from given stream | nothing
+`/?id=ID&r=-1` | cancel given stream | nothing
 
 The format returned in the subscribe calls is (EBNF):
 
