@@ -33,3 +33,46 @@ Error = NegativeLength {Byte};
 NegativeLength = SignedInteger; // Not Integer.MIN_VALUE
 Complete = Integer.MIN_VALUE // 4 bytes, SignedInteger
 ```
+
+## Getting started
+
+### Maven dependency
+```xml
+<dependency>
+  <groupId>com.github.davidmoten</groupId>
+  <artifactId>rxjava2-http</artifactId>
+  <version>VERSION_HERE</version>
+</dependency>
+```
+
+### Create servlet
+The servlet below exposes the `Flowable.range(1, 1000)` stream across HTTP:
+
+```java
+@WebServlet(urlPatterns={"/stream"})
+public class HandlerServlet extends FlowableHttpServlet {
+      
+    public HandlerServlet() {
+        super(
+          Flowable
+            .range(1,1000)
+            .map(DefaultSerializer.instance()::serialize)      
+        );
+    }
+}
+```
+
+### Create client
+Assuming the servlet above is listening on `http://localhost:8080/stream`, this is how you access it over HTTP:
+
+```java
+Flowable<Integer> numbers = 
+    Client
+       .get("http://localhost:8080/", DefaultSerializer.instance());
+```
+  
+
+
+```
+
+
