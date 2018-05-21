@@ -13,6 +13,13 @@ public class DefaultSerializer<T extends Serializable> implements Serializer<T> 
 
     private final int bufferSize;
 
+    private static final DefaultSerializer<Serializable> instance = new DefaultSerializer<>(128);
+    
+    @SuppressWarnings("unchecked")
+    public static final <T extends Serializable> DefaultSerializer<T> instance() {
+        return (DefaultSerializer<T>) instance;
+    }
+
     public DefaultSerializer(int bufferSize) {
         this.bufferSize = bufferSize;
     }
