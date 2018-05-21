@@ -2,6 +2,7 @@ package org.davidmoten.rx2.io;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -21,8 +22,31 @@ public final class Client {
         return get(url, preRequest).map(bb -> serializer.deserialize(bb));
     }
 
-    public static Flowable<ByteBuffer> get(String url) {
-        return get(url, 16);
+    public static Builder get(String url) {
+        return new Builder(url);
+    }
+
+    static final class Builder {
+
+        private final String url;
+        private int rebatchRequests = 16;
+
+        Builder(String url) {
+            this.url = url;
+        }
+
+        public Builder rebatchRequests(int n) {
+            this.rebatchRequests = n;
+            return this;
+        }
+
+        public <T extends Serializable> Flowable<T> serializer(Serializer<T> serializer) {
+            return get(url, rebatchRequests, serializer);
+        }
+
+        public Flowable<ByteBuffer> build() {
+            return get(url, rebatchRequests);
+        }
     }
 
     public static Flowable<ByteBuffer> get(String url, int preRequest) {

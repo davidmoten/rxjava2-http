@@ -53,6 +53,7 @@ public class ClientTest {
         Server server = createServer(Flowable.empty());
         try {
             Client.get("http://localhost:8080/") //
+                    .build() //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
                     .assertNoValues() //
@@ -70,6 +71,7 @@ public class ClientTest {
                         .map(x -> ByteBuffer.wrap(new byte[] { 1 })));
         try {
             Client.get("http://localhost:8080/") //
+                    .build() //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
                     .assertValueCount(1) //
@@ -85,6 +87,26 @@ public class ClientTest {
         Server server = createServer(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })).repeat());
         try {
             Client.get("http://localhost:8080/") //
+                    .build() //
+                    .take(20) //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertValueCount(20) //
+                    .assertComplete();
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testRange() throws Exception {
+        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000)
+                .map(DefaultSerializer.instance()::serialize);
+        Server server = createServer(flowable);
+        try {
+            Client.get("http://localhost:8080/") // s
+                    .serializer(DefaultSerializer.<Integer>instance()) //
                     .take(20) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
