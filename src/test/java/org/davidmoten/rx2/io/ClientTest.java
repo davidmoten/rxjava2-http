@@ -106,7 +106,7 @@ public class ClientTest {
         Server server = createServer(flowable);
         try {
             Client.get("http://localhost:8080/") // s
-                    .<Integer>serialized() //
+                    .<Integer>deserialized() //
                     .skip(500) //
                     .take(4) //
                     .test() //
