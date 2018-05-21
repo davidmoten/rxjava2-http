@@ -18,10 +18,6 @@ import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Client {
 
-    public static <T> Flowable<T> get(String url, int preRequest, Serializer<T> serializer) {
-        return get(url, preRequest).map(bb -> serializer.deserialize(bb));
-    }
-
     public static Builder get(String url) {
         return new Builder(url);
     }
@@ -29,33 +25,44 @@ public final class Client {
     static final class Builder {
 
         private final String url;
-        private int rebatchRequests = 16;
+        private int bufferSize = 16;
+        private boolean delayErrors = false;
 
         Builder(String url) {
             this.url = url;
         }
 
-        public Builder rebatchRequests(int n) {
-            this.rebatchRequests = n;
+        public Builder bufferSize(int n) {
+            this.bufferSize = n;
+            return this;
+        }
+
+        public Builder delayErrors(boolean delayErrors) {
+            this.delayErrors = delayErrors;
             return this;
         }
 
         public <T extends Serializable> Flowable<T> serializer(Serializer<T> serializer) {
-            return get(url, rebatchRequests, serializer);
+            return get(url, delayErrors, bufferSize, serializer);
         }
 
         public Flowable<ByteBuffer> build() {
-            return get(url, rebatchRequests);
+            return get(url, delayErrors, bufferSize);
         }
     }
 
-    public static Flowable<ByteBuffer> get(String url, int preRequest) {
+    private static <T> Flowable<T> get(String url, boolean delayErrors, int bufferSize,
+            Serializer<T> serializer) {
+        return get(url, delayErrors, bufferSize).map(serializer::deserialize);
+    }
+
+    private static Flowable<ByteBuffer> get(String url, boolean delayErrors, int bufferSize) {
         final URL u;
         try {
-            if (preRequest == 0) {
+            if (bufferSize == 0) {
                 u = new URL(url);
             } else {
-                u = new URL(url + "/?r=" + preRequest);
+                u = new URL(url + "/?r=" + bufferSize);
             }
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
@@ -86,13 +93,14 @@ public final class Client {
                     con.setUseCaches(false);
                     return con.getInputStream();
                 }, //
-                in -> read(Single.just(in), requester), //
+                in -> read(Single.just(in), requester, delayErrors, bufferSize), //
                 in -> Util.close(in));
     }
 
     public static Flowable<ByteBuffer> read(Single<InputStream> inSource,
-            BiConsumer<Long, Long> requester) {
-        return inSource.flatMapPublisher(in -> new FlowableFromInputStream(in, requester));
+            BiConsumer<Long, Long> requester, boolean delayErrors, int bufferSize) {
+        return inSource.toFlowable().flatMap(in -> new FlowableFromInputStream(in, requester),
+                delayErrors, 1, bufferSize);
     }
 
 }

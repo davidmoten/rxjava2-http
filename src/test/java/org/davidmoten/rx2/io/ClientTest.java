@@ -34,7 +34,7 @@ public class ClientTest {
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             BiConsumer<Long, Long> requester = createRequester();
-            Client.read(Single.just(con.getInputStream()), requester) //
+            Client.read(Single.just(con.getInputStream()), requester, true, 16) //
                     .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
@@ -122,7 +122,9 @@ public class ClientTest {
     public void testGetWithClientAbbreviated() throws Exception {
         Server server = createServer(SOURCE);
         try {
-            Client.get("http://localhost:8080/", 100) //
+            Client.get("http://localhost:8080/") //
+                    .bufferSize(100) //
+                    .build()
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
