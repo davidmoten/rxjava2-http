@@ -15,8 +15,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.reactivestreams.Subscription;
 
 import io.reactivex.Flowable;
+import io.reactivex.Scheduler;
 import io.reactivex.Single;
 import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 public final class ServletHandler {
 
@@ -26,12 +28,19 @@ public final class ServletHandler {
 
     private final Flowable<ByteBuffer> flowable;
 
+    private final Scheduler requestScheduler;
+
     public static ServletHandler create(Flowable<ByteBuffer> flowable) {
-        return new ServletHandler(flowable);
+        return create(flowable, Schedulers.io());
     }
 
-    private ServletHandler(Flowable<ByteBuffer> flowable) {
+    public static ServletHandler create(Flowable<ByteBuffer> flowable, Scheduler requestScheduler) {
+        return new ServletHandler(flowable, requestScheduler);
+    }
+
+    private ServletHandler(Flowable<ByteBuffer> flowable, Scheduler requestScheduler) {
         this.flowable = flowable;
+        this.requestScheduler = requestScheduler;
     }
 
     public void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -55,7 +64,7 @@ public final class ServletHandler {
             latch.countDown();
         };
         Consumer<Subscription> subscription = sub -> map.put(id, sub);
-        Server.handle(flowable, Single.just(out), done, id, subscription);
+        Server.handle(flowable, Single.just(out), done, id, requestScheduler, subscription);
         if (request > 0) {
             Subscription sub = map.get(id);
             if (sub != null) {

@@ -12,6 +12,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import io.reactivex.Flowable;
+import io.reactivex.Scheduler;
+import io.reactivex.Scheduler.Worker;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
 import io.reactivex.disposables.Disposable;
@@ -23,10 +25,11 @@ import io.reactivex.plugins.RxJavaPlugins;
 public final class Server {
 
     public static void handle(Flowable<ByteBuffer> flowable, Single<OutputStream> out,
-            Runnable done, long id, Consumer<Subscription> subscription) {
+            Runnable done, long id, Scheduler requestScheduler,
+            Consumer<Subscription> subscription) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
-        HandlerSubscriber subscriber = new HandlerSubscriber(out, done, id);
+        HandlerSubscriber subscriber = new HandlerSubscriber(out, done, id, requestScheduler);
         try {
             subscription.accept(subscriber);
         } catch (Exception e) {
@@ -44,6 +47,7 @@ public final class Server {
         private OutputStream out;
         private final Runnable completion;
         private final long id;
+        private final Worker worker;
         private Subscription parent;
         private boolean done;
         private SimplePlainQueue<ByteBuffer> queue = new SpscLinkedArrayQueue<>(16);
@@ -52,10 +56,12 @@ public final class Server {
         private volatile boolean cancelled;
         private Disposable disposable;
 
-        HandlerSubscriber(Single<OutputStream> outSource, Runnable completion, long id) {
+        HandlerSubscriber(Single<OutputStream> outSource, Runnable completion, long id,
+                Scheduler requestScheduler) {
             this.outSource = outSource;
             this.completion = completion;
             this.id = id;
+            this.worker = requestScheduler.createWorker();
         }
 
         @Override
@@ -85,8 +91,10 @@ public final class Server {
 
         @Override
         public void request(long n) {
-            parent.request(n);
-            drain();
+            worker.schedule(() -> {
+                parent.request(n);
+                drain();
+            });
         }
 
         @Override
