@@ -103,6 +103,7 @@ public final class Server {
                 cancelled = true;
                 disposable.dispose();
                 parent.cancel();
+                worker.dispose();
             } finally {
                 Util.close(out);
             }
@@ -148,6 +149,7 @@ public final class Server {
                             parent.cancel();
                             queue.clear();
                             error = null;
+                            worker.dispose();
                             completion.run();
                             return;
                         }
@@ -159,6 +161,7 @@ public final class Server {
                             } catch (Throwable e) {
                                 parent.cancel();
                                 queue.clear();
+                                worker.dispose();
                                 if (!cancelled) {
                                     writeError(e);
                                 }
@@ -170,6 +173,7 @@ public final class Server {
                                 error = null;
                                 parent.cancel();
                                 queue.clear();
+                                worker.dispose();
                                 writeError(err);
                                 completion.run();
                                 return;
