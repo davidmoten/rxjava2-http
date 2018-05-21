@@ -37,7 +37,8 @@ Assuming the servlet above is listening on `http://localhost:8080/stream`, this 
 ```java
 Flowable<Integer> numbers = 
     Client
-       .get("http://localhost:8080/", DefaultSerializer.instance());
+       .get("http://localhost:8080/")
+       .serialized();
 ```
 
 ## Design
