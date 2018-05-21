@@ -18,7 +18,6 @@ import io.reactivex.Flowable;
 import io.reactivex.Scheduler;
 import io.reactivex.Single;
 import io.reactivex.functions.Consumer;
-import io.reactivex.schedulers.Schedulers;
 
 public final class ServletHandler {
 
@@ -29,10 +28,6 @@ public final class ServletHandler {
     private final Flowable<ByteBuffer> flowable;
 
     private final Scheduler requestScheduler;
-
-    public static ServletHandler create(Flowable<ByteBuffer> flowable) {
-        return create(flowable, Schedulers.io());
-    }
 
     public static ServletHandler create(Flowable<ByteBuffer> flowable, Scheduler requestScheduler) {
         return new ServletHandler(flowable, requestScheduler);

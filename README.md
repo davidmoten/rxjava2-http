@@ -30,6 +30,7 @@ public class HandlerServlet extends FlowableHttpServlet {
     }
 }
 ```
+The default behaviour is to schedule requests on `Schedulers.io()` but this is configurable via another `FlowableHttpServlet` constructor.
 
 ### Create client
 Assuming the servlet above is listening on `http://localhost:8080/stream`, this is how you access it over HTTP:
