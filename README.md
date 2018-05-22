@@ -88,6 +88,9 @@ The format returned in the subscribe calls is (EBNF):
 ### Error
 <img src="https://raw.githubusercontent.com/davidmoten/rxjava2-http/master/src/doc/Error.png"/><br/>
 
+
+EBNF as text:
+
 ```
 Stream ::= Id Item* ( Error | Complete )?
 Item ::= Length Byte*
