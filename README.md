@@ -76,9 +76,16 @@ Path | Method | Action | Returns
 
 The format returned in the subscribe calls is (EBNF):
 
+### Stream
 <img src="https://raw.githubusercontent.com/davidmoten/rxjava2-http/master/src/doc/Stream.png"/><br/>
+
+### Item
 <img src="https://raw.githubusercontent.com/davidmoten/rxjava2-http/master/src/doc/Item.png"/><br/>
+
+### Complete
 <img src="https://raw.githubusercontent.com/davidmoten/rxjava2-http/master/src/doc/Complete.png"/><br/>
+
+### Error
 <img src="https://raw.githubusercontent.com/davidmoten/rxjava2-http/master/src/doc/Error.png"/><br/>
 
 ```
