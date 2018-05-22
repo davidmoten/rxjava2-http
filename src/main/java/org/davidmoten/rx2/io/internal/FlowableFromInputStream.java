@@ -52,8 +52,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         private byte[] buffer;
         private int bufferIndex;
 
-        FromStreamSubscriber(InputStream in, BiConsumer<Long, Long> requester,
-                Subscriber<? super ByteBuffer> child) {
+        FromStreamSubscriber(InputStream in, BiConsumer<Long, Long> requester, Subscriber<? super ByteBuffer> child) {
             this.in = in;
             this.requester = requester;
             this.child = child;
@@ -128,8 +127,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                             bufferIndex += count;
                             if (count == -1) {
                                 closeStreamSilently();
-                                child.onError(new EOFException(
-                                        "encountered EOF before expected length was read"));
+                                child.onError(new EOFException("encountered EOF before expected length was read"));
                                 return;
                             } else if (bufferIndex == length) {
                                 child.onNext(ByteBuffer.wrap(buffer, 0, length));
@@ -184,7 +182,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
             } catch (Exception e) {
                 Exceptions.throwIfFatal(e);
                 closeStreamSilently();
-                child.onError(e);
+                RxJavaPlugins.onError(e);
                 return;
             }
         }

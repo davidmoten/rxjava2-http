@@ -14,6 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.davidmoten.rx2.io.Client.Requester;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -221,6 +222,12 @@ public class ClientTest {
         } finally {
             server.stop();
         }
+    }
+    
+    @Test
+    public void testRequesterNon200ResponseCode() throws Exception {
+        Requester r = new Client.Requester("http://localhost/doesNotExist");
+        r.accept(1L, 1L);
     }
 
     private static Server createServer(Flowable<ByteBuffer> flowable) {

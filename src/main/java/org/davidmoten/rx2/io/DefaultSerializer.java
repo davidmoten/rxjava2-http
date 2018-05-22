@@ -9,12 +9,14 @@ import java.nio.ByteBuffer;
 import org.davidmoten.rx2.io.internal.ByteBufferInputStream;
 import org.davidmoten.rx2.io.internal.NoCopyByteArrayOutputStream;
 
+import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
+
 public class DefaultSerializer<T extends Serializable> implements Serializer<T> {
 
     private final int bufferSize;
 
     private static final DefaultSerializer<Serializable> instance = new DefaultSerializer<>(128);
-    
+
     @SuppressWarnings("unchecked")
     public static final <T extends Serializable> DefaultSerializer<T> instance() {
         return (DefaultSerializer<T>) instance;
@@ -27,12 +29,7 @@ public class DefaultSerializer<T extends Serializable> implements Serializer<T> 
     @Override
     public ByteBuffer serialize(T t) {
         NoCopyByteArrayOutputStream bytes = new NoCopyByteArrayOutputStream(bufferSize);
-        try (ObjectOutputStream oos = new ObjectOutputStream(bytes)) {
-            oos.writeObject(t);
-            return bytes.asByteBuffer();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return serialize(t, bytes);
     }
 
     @SuppressWarnings("unchecked")
@@ -41,6 +38,16 @@ public class DefaultSerializer<T extends Serializable> implements Serializer<T> 
         try (ObjectInputStream ois = new ObjectInputStream(new ByteBufferInputStream(bb))) {
             return (T) ois.readObject();
         } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    @VisibleForTesting
+    static <T> ByteBuffer serialize(T t, NoCopyByteArrayOutputStream bytes) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(bytes)) {
+            oos.writeObject(t);
+            return bytes.asByteBuffer();
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

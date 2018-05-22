@@ -11,6 +11,8 @@ import java.nio.ByteBuffer;
 import org.davidmoten.rx2.io.internal.FlowableFromInputStream;
 import org.davidmoten.rx2.io.internal.Util;
 
+import com.github.davidmoten.guavamini.Preconditions;
+
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.functions.BiConsumer;
@@ -60,32 +62,15 @@ public final class Client {
     }
 
     private static Flowable<ByteBuffer> get(String url, boolean delayErrors, int bufferSize) {
+        Preconditions.checkArgument(bufferSize > 0);
         final URL u;
         try {
-            if (bufferSize == 0) {
-                u = new URL(url);
-            } else {
-                u = new URL(url + "/?r=" + bufferSize);
-            }
+            u = new URL(url + "/?r=" + bufferSize);
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
 
-        BiConsumer<Long, Long> requester = new BiConsumer<Long, Long>() {
-
-            @Override
-            public void accept(Long id, Long request) throws Exception {
-                HttpURLConnection con = (HttpURLConnection) new URL(url + "?id=" + id + "&r=" + request) //
-                        .openConnection();
-                con.setRequestMethod("GET");
-                con.setUseCaches(false);
-                int code = con.getResponseCode();
-                if (code != 200) {
-                    RxJavaPlugins.onError(new IOException("response code from request call was not 200: " + code));
-                }
-            }
-
-        };
+        BiConsumer<Long, Long> requester = new Requester(url);
 
         return Flowable.using( //
                 () -> {
@@ -96,6 +81,31 @@ public final class Client {
                 }, //
                 in -> read(Single.just(in), requester, delayErrors, bufferSize), //
                 in -> Util.close(in));
+    }
+
+    static final class Requester implements BiConsumer<Long, Long> {
+
+        private final String url;
+
+        Requester(String url) {
+            this.url = url;
+        }
+
+        @Override
+        public void accept(Long id, Long request) throws Exception {
+            try {
+                HttpURLConnection con = (HttpURLConnection) new URL(url + "?id=" + id + "&r=" + request) //
+                        .openConnection();
+                con.setRequestMethod("GET");
+                con.setUseCaches(false);
+                int code = con.getResponseCode();
+                if (code != 200) {
+                    RxJavaPlugins.onError(new IOException("response code from request call was not 200: " + code));
+                }
+            } catch (Throwable e) {
+                RxJavaPlugins.onError(e);
+            }
+        }
     }
 
     public static Flowable<ByteBuffer> read(Single<InputStream> inSource, BiConsumer<Long, Long> requester,
