@@ -45,20 +45,20 @@ Flowable<Integer> numbers =
 ## Design
 WebSockets is a natural for this but can be blocked by corporate firewalls so this library starts with support for HTTP 1.0. 
 
-Need API support for these actions:
+We want API support for these actions:
 
 * subscribe
 * request
 * cancel
 
-This support is provided via these URL paths
+Support is provided via these URL paths
 
-Path | Action | Returns
---- | --- | ---
-`/`   | subscribe with no request | Stream ID then binary stream
-`/?r=REQUEST` | subscribe with initial request | Stream ID then binary stream
-`/?id=ID&r=REQUEST` | request more from given stream | nothing
-`/?id=ID&r=-1` | cancel given stream | nothing
+Path | Method | Action | Returns
+--- | --- | --- | --
+`/`   | GET | subscribe with no request | Stream ID then binary stream
+`/?r=REQUEST`|GET | subscribe with initial request | Stream ID then binary stream
+`/?id=ID&r=REQUEST` |GET| request more from given stream | nothing
+`/?id=ID&r=-1` |GET| cancel given stream | nothing
 
 The format returned in the subscribe calls is (EBNF):
 
@@ -71,3 +71,8 @@ Error = NegativeLength {Byte};
 NegativeLength = SignedInteger; // Not Integer.MIN_VALUE
 Complete = Integer.MIN_VALUE // 4 bytes, SignedInteger
 ```
+
+The core of the library is support for publishing a `Flowable<ByteBuffer>` over HTTP. Serialization is a little optional extra that occurs at both ends.
+
+### Nested Flowables
+I have a design in mind for publishing nested Flowables over HTTP as well (representing the beginning of a nested Flowable with a special length value). I don't currently have a use case but if you do raise an issue and we'll implement it.
