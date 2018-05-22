@@ -1,4 +1,4 @@
-package org.davidmoten.rx2.io;
+package org.davidmoten.rx2.io.internal;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.davidmoten.rx2.io.internal.Server;
 import org.davidmoten.rx2.io.internal.Util;
 import org.junit.Test;
 import org.reactivestreams.Subscription;

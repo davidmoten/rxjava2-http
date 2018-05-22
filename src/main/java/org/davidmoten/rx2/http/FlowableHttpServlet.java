@@ -9,7 +9,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.davidmoten.rx2.io.ServletHandler;
+import org.davidmoten.rx2.io.internal.ServletHandler;
 
 import io.reactivex.Flowable;
 import io.reactivex.Scheduler;

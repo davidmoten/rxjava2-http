@@ -1,5 +1,6 @@
-package org.davidmoten.rx2.io;
+package org.davidmoten.rx2.io.internal;
 
+import org.davidmoten.rx2.io.internal.Server;
 import org.junit.Test;
 
 import com.github.davidmoten.junit.Asserts;

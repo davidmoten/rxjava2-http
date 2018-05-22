@@ -1,4 +1,4 @@
-package org.davidmoten.rx2.io;
+package org.davidmoten.rx2.io.internal;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -6,8 +6,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.davidmoten.rx2.io.internal.NoCopyByteArrayOutputStream;
-import org.davidmoten.rx2.io.internal.Util;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
