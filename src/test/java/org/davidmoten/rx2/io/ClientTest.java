@@ -1,6 +1,7 @@
 package org.davidmoten.rx2.io;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -8,7 +9,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
@@ -19,18 +23,18 @@ import org.junit.Test;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.functions.BiConsumer;
+import io.reactivex.subscribers.TestSubscriber;
 
 public class ClientTest {
 
-    private static final Flowable<ByteBuffer> SOURCE = Flowable.just(
-            ByteBuffer.wrap(new byte[] { 1, 2, 3 }), ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
+    private static final Flowable<ByteBuffer> SOURCE = Flowable.just(ByteBuffer.wrap(new byte[] { 1, 2, 3 }),
+            ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
 
     @Test
     public void testGetWithClient() throws Exception {
         Server server = createServer(SOURCE);
         try {
-            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100")
-                    .openConnection();
+            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100").openConnection();
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             BiConsumer<Long, Long> requester = createRequester();
@@ -101,14 +105,70 @@ public class ClientTest {
 
     @Test
     public void testRange() throws Exception {
-        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000)
-                .map(DefaultSerializer.instance()::serialize);
+        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(DefaultSerializer.instance()::serialize);
         Server server = createServer(flowable);
         try {
             Client.get("http://localhost:8080/") // s
                     .<Integer>deserialized() //
                     .skip(500) //
                     .take(4) //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertValues(501, 502, 503, 504) //
+                    .assertComplete();
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testBackpressure() throws Exception {
+        List<Long> requests = new CopyOnWriteArrayList<>();
+        AtomicBoolean cancelled = new AtomicBoolean();
+        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000) //
+                .map(DefaultSerializer.instance()::serialize) //
+                .doOnRequest(n -> requests.add(n)) //
+                .doOnCancel(() -> cancelled.set(true));
+        Server server = createServer(flowable);
+        try {
+            TestSubscriber<Integer> ts = Client.get("http://localhost:8080/") // s
+                    .<Integer>deserialized() //
+                    .test(0);
+            Thread.sleep(300);
+            ts.assertNoValues() //
+                    .assertNotTerminated();
+            // 16 pre-request and 16 from flatmap
+            assertEquals(Arrays.asList(16L, 16L), requests);
+            ts.requestMore(1);
+            Thread.sleep(300);
+            ts.assertValue(1);
+            assertEquals(Arrays.asList(16L, 16L), requests);
+            ts.requestMore(2);
+            Thread.sleep(300);
+            ts.assertValues(1, 2, 3);
+            ts.requestMore(2);
+            Thread.sleep(300);
+            ts.assertValues(1, 2, 3, 4, 5);
+            ts.cancel();
+            Thread.sleep(300);
+            assertTrue(cancelled.get());
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testRangeParallel() throws Exception {
+        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(DefaultSerializer.instance()::serialize);
+        Server server = createServer(flowable);
+        try {
+            Flowable<Integer> f = Client.get("http://localhost:8080/") // s
+                    .<Integer>deserialized() //
+                    .skip(500) //
+                    .take(4);
+            f.zipWith(f, (a, b) -> a) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
                     .assertValues(501, 502, 503, 504) //
@@ -142,8 +202,7 @@ public class ClientTest {
         try {
             // Start Server
             server.start();
-            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100")
-                    .openConnection();
+            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100").openConnection();
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             InputStream in = con.getInputStream();
@@ -186,8 +245,8 @@ public class ClientTest {
 
             @Override
             public void accept(Long id, Long request) throws Exception {
-                HttpURLConnection con = (HttpURLConnection) new URL(
-                        "http://localhost:8080/?id=" + id + "&r=" + request).openConnection();
+                HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?id=" + id + "&r=" + request)
+                        .openConnection();
                 con.setRequestMethod("GET");
                 con.setUseCaches(false);
                 assertEquals(HttpStatus.OK_200, con.getResponseCode());

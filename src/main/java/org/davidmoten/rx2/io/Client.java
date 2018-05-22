@@ -55,8 +55,7 @@ public final class Client {
         }
     }
 
-    private static <T> Flowable<T> get(String url, boolean delayErrors, int bufferSize,
-            Serializer<T> serializer) {
+    private static <T> Flowable<T> get(String url, boolean delayErrors, int bufferSize, Serializer<T> serializer) {
         return get(url, delayErrors, bufferSize).map(serializer::deserialize);
     }
 
@@ -76,15 +75,13 @@ public final class Client {
 
             @Override
             public void accept(Long id, Long request) throws Exception {
-                HttpURLConnection con = (HttpURLConnection) new URL(
-                        url + "?id=" + id + "&r=" + request) //
-                                .openConnection();
+                HttpURLConnection con = (HttpURLConnection) new URL(url + "?id=" + id + "&r=" + request) //
+                        .openConnection();
                 con.setRequestMethod("GET");
                 con.setUseCaches(false);
                 int code = con.getResponseCode();
                 if (code != 200) {
-                    RxJavaPlugins.onError(new IOException(
-                            "response code from request call was not 200: " + code));
+                    RxJavaPlugins.onError(new IOException("response code from request call was not 200: " + code));
                 }
             }
 
@@ -101,10 +98,11 @@ public final class Client {
                 in -> Util.close(in));
     }
 
-    public static Flowable<ByteBuffer> read(Single<InputStream> inSource,
-            BiConsumer<Long, Long> requester, boolean delayErrors, int bufferSize) {
-        return inSource.toFlowable().flatMap(in -> new FlowableFromInputStream(in, requester),
-                delayErrors, 1, bufferSize);
+    public static Flowable<ByteBuffer> read(Single<InputStream> inSource, BiConsumer<Long, Long> requester,
+            boolean delayErrors, int bufferSize) {
+        return inSource //
+                .toFlowable() //
+                .flatMap(in -> new FlowableFromInputStream(in, requester), delayErrors, 1, bufferSize);
     }
 
 }
