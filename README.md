@@ -76,6 +76,13 @@ Path | Method | Action | Returns
 
 The format returned in the subscribe calls is (EBNF):
 
+```
+Stream ::= Id Item* ( Error | Complete )?
+Item ::= Length Byte*
+Error ::= NegativeLength Byte*
+Complete ::= NegativeMinLength
+```
+
 ### Stream
 <img src="https://raw.githubusercontent.com/davidmoten/rxjava2-http/master/src/doc/Stream.png"/><br/>
 
@@ -88,15 +95,6 @@ The format returned in the subscribe calls is (EBNF):
 ### Error
 <img src="https://raw.githubusercontent.com/davidmoten/rxjava2-http/master/src/doc/Error.png"/><br/>
 
-
-EBNF as text:
-
-```
-Stream ::= Id Item* ( Error | Complete )?
-Item ::= Length Byte*
-Error ::= NegativeLength Byte*
-Complete ::= NegativeMinLength
-```
 
 The core of the library is support for publishing a `Flowable<ByteBuffer>` over HTTP. Serialization is a little optional extra that occurs at both ends.
 
