@@ -2,6 +2,8 @@ package org.davidmoten.rx2.io;
 
 import java.nio.ByteBuffer;
 
+import org.davidmoten.rx2.http.FlowableHttpServlet;
+
 import io.reactivex.Flowable;
 
 public final class HandlerServlet extends FlowableHttpServlet {
