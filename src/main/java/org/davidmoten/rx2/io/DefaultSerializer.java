@@ -11,7 +11,7 @@ import org.davidmoten.rx2.io.internal.NoCopyByteArrayOutputStream;
 
 import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 
-public class DefaultSerializer<T extends Serializable> implements Serializer<T> {
+public final class DefaultSerializer<T extends Serializable> implements Serializer<T> {
 
     private final int bufferSize;
 

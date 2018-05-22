@@ -29,8 +29,9 @@ public class ByteBufferInputStreamTest {
 
     @Test
     public void testReadInt() throws IOException {
-        ByteBufferInputStream b = new ByteBufferInputStream(ByteBuffer.wrap(new byte[] { 12 }));
-        assertEquals(12, b.read());
+        try (ByteBufferInputStream b = new ByteBufferInputStream(ByteBuffer.wrap(new byte[] { 12 }))) {
+            assertEquals(12, b.read());
+        }
     }
 
     @Test

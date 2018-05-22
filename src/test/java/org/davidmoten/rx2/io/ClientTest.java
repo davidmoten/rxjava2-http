@@ -21,6 +21,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 
+import com.github.davidmoten.junit.Asserts;
+
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.functions.BiConsumer;
@@ -30,6 +32,11 @@ public class ClientTest {
 
     private static final Flowable<ByteBuffer> SOURCE = Flowable.just(ByteBuffer.wrap(new byte[] { 1, 2, 3 }),
             ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
+    
+    @Test
+    public void isUtilityClass() {
+        Asserts.assertIsUtilityClass(Client.class);
+    }
 
     @Test
     public void testGetWithClient() throws Exception {

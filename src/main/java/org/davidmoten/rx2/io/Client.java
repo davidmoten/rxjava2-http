@@ -19,6 +19,10 @@ import io.reactivex.functions.BiConsumer;
 import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Client {
+    
+    private Client() {
+        //prevent instantiation
+    }
 
     public static Builder get(String url) {
         return new Builder(url);
