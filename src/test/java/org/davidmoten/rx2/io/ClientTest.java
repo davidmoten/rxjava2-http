@@ -185,6 +185,7 @@ public class ClientTest {
         try {
             Client.get("http://localhost:8080/") //
                     .bufferSize(100) //
+                    .delayErrors(true) //
                     .build().reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //

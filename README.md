@@ -41,6 +41,16 @@ Flowable<Integer> numbers =
        .get("http://localhost:8080/")
        .deserialized();
 ```
+More client options are available. Here is an example:
+
+```java
+Flowable<Integer> numbers = 
+	Client
+	  .get("http://localhost:8080/") //
+	  .bufferSize(100) // request in batches of 100, default is 16
+	  .delayErrors(false) // as soon as an error is noticed emit and throw away any queued items
+	  .serializer(serializer); // used for deserialization
+```
 
 ## Design
 WebSockets is a natural for this but can be blocked by corporate firewalls so this library starts with support for HTTP 1.0. 
