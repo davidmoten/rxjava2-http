@@ -1,7 +1,9 @@
 package org.davidmoten.rx2.io.internal;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -9,14 +11,16 @@ import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.exceptions.Exceptions;
 import io.reactivex.functions.Function;
+import io.reactivex.internal.subscriptions.SubscriptionHelper;
 
-public final class FlowableFlatMapSingle<S, T> extends Flowable<T> {
+public final class FlowableSingleFlatMapPublisher<S, T> extends Flowable<T> {
 
     private final Single<S> source;
-    private final Function<? super S, ? extends Flowable<T>> mapper;
+    private final Function<? super S, ? extends Publisher<T>> mapper;
 
-    public FlowableFlatMapSingle(Single<S> source,
+    public FlowableSingleFlatMapPublisher(Single<S> source,
             Function<? super S, ? extends Flowable<T>> mapper) {
         this.source = source;
         this.mapper = mapper;
@@ -32,12 +36,13 @@ public final class FlowableFlatMapSingle<S, T> extends Flowable<T> {
             implements SingleObserver<S>, Subscriber<T>, Subscription {
 
         private final Subscriber<? super T> child;
-        private final Function<? super S, ? extends Flowable<T>> mapper;
+        private final Function<? super S, ? extends Publisher<T>> mapper;
         private Disposable disposable;
         private final AtomicReference<Subscription> parent = new AtomicReference<>();
+        private final AtomicLong requested = new AtomicLong();
 
         FlatMapSingleObserver(Subscriber<? super T> child,
-                Function<? super S, ? extends Flowable<T>> mapper) {
+                Function<? super S, ? extends Publisher<T>> mapper) {
             this.child = child;
             this.mapper = mapper;
         }
@@ -50,10 +55,11 @@ public final class FlowableFlatMapSingle<S, T> extends Flowable<T> {
 
         @Override
         public void onSuccess(S value) {
-            Flowable<T> f;
+            Publisher<T> f;
             try {
                 f = mapper.apply(value);
             } catch (Exception e) {
+                Exceptions.throwIfFatal(e);
                 child.onError(e);
                 return;
             }
@@ -62,7 +68,7 @@ public final class FlowableFlatMapSingle<S, T> extends Flowable<T> {
 
         @Override
         public void onSubscribe(Subscription s) {
-            parent.compareAndSet(null, s);
+            SubscriptionHelper.deferredSetOnce(parent, requested, s);
         }
 
         @Override
@@ -82,12 +88,13 @@ public final class FlowableFlatMapSingle<S, T> extends Flowable<T> {
 
         @Override
         public void request(long n) {
-            parent.request(n);
+            SubscriptionHelper.deferredRequest(parent, requested, n);
         }
 
         @Override
         public void cancel() {
-            parent.cancel();
+            disposable.dispose();
+            SubscriptionHelper.cancel(parent);
         }
     }
 
