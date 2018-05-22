@@ -52,7 +52,8 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         private byte[] buffer;
         private int bufferIndex;
 
-        FromStreamSubscriber(InputStream in, BiConsumer<Long, Long> requester, Subscriber<? super ByteBuffer> child) {
+        FromStreamSubscriber(InputStream in, BiConsumer<Long, Long> requester,
+                Subscriber<? super ByteBuffer> child) {
             this.in = in;
             this.requester = requester;
             this.child = child;
@@ -101,8 +102,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                         Throwable err = error;
                         if (err != null) {
                             error = null;
-                            closeStreamSilently();
-                            child.onError(err);
+                            emitError(err);
                             return;
                         }
                         // read some more
@@ -110,8 +110,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                             try {
                                 length = Util.readInt(in);
                             } catch (IOException e1) {
-                                closeStreamSilently();
-                                child.onError(e1);
+                                emitError(e1);
                                 return;
                             }
                             if (length == Integer.MIN_VALUE) {
@@ -126,8 +125,8 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                             int count = in.read(buffer, bufferIndex, length - bufferIndex);
                             bufferIndex += count;
                             if (count == -1) {
-                                closeStreamSilently();
-                                child.onError(new EOFException("encountered EOF before expected length was read"));
+                                emitError(new EOFException(
+                                        "encountered EOF before expected length was read"));
                                 return;
                             } else if (bufferIndex == length) {
                                 child.onNext(ByteBuffer.wrap(buffer, 0, length));
@@ -136,8 +135,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                             }
                         } catch (Throwable ex) {
                             Exceptions.throwIfFatal(ex);
-                            closeStreamSilently();
-                            child.onError(ex);
+                            emitError(ex);
                             return;
                         }
                     }
@@ -148,6 +146,11 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                     }
                 }
             }
+        }
+
+        private void emitError(Throwable e) {
+            closeStreamSilently();
+            child.onError(e);
         }
 
         private boolean tryCancelled() {
