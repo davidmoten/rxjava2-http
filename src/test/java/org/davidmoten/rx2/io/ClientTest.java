@@ -32,7 +32,7 @@ public class ClientTest {
 
     private static final Flowable<ByteBuffer> SOURCE = Flowable.just(ByteBuffer.wrap(new byte[] { 1, 2, 3 }),
             ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
-    
+
     @Test
     public void isUtilityClass() {
         Asserts.assertIsUtilityClass(Client.class);
@@ -46,7 +46,7 @@ public class ClientTest {
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             BiConsumer<Long, Long> requester = createRequester();
-            Client.read(Single.just(con.getInputStream()), requester, true, 16) //
+            Client.read(Single.just(con.getInputStream()), requester) //
                     .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
@@ -172,11 +172,12 @@ public class ClientTest {
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(DefaultSerializer.instance()::serialize);
         Server server = createServer(flowable);
         try {
-            Flowable<Integer> f = Client.get("http://localhost:8080/") // s
+            Flowable<Integer> f = Client.get("http://localhost:8080/") // 
                     .<Integer>deserialized() //
                     .skip(500) //
                     .take(4);
             f.zipWith(f, (a, b) -> a) //
+                    .timeout(5, TimeUnit.SECONDS) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
                     .assertValues(501, 502, 503, 504) //
@@ -192,8 +193,8 @@ public class ClientTest {
         Server server = createServer(SOURCE);
         try {
             Client.get("http://localhost:8080/") //
+                    .method(HttpMethod.POST) //
                     .bufferSize(100) //
-                    .delayErrors(true) //
                     .build().reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
@@ -230,10 +231,10 @@ public class ClientTest {
             server.stop();
         }
     }
-    
+
     @Test
     public void testRequesterNon200ResponseCode() throws Exception {
-        Requester r = new Client.Requester("http://localhost/doesNotExist");
+        Requester r = new Client.Requester("http://localhost/doesNotExist", HttpMethod.GET);
         r.accept(1L, 1L);
     }
 

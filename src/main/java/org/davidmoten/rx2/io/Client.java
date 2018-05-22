@@ -12,8 +12,6 @@ import org.davidmoten.rx2.io.internal.FlowableFromInputStream;
 import org.davidmoten.rx2.io.internal.FlowableSingleFlatMapPublisher;
 import org.davidmoten.rx2.io.internal.Util;
 
-import com.github.davidmoten.guavamini.Preconditions;
-
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.functions.BiConsumer;
@@ -32,8 +30,8 @@ public final class Client {
     static final class Builder {
 
         private final String url;
-        private int bufferSize = 16;
-        private boolean delayErrors = false;
+        private int bufferSize = 0;
+        private HttpMethod method = HttpMethod.GET;
 
         Builder(String url) {
             this.url = url;
@@ -44,13 +42,13 @@ public final class Client {
             return this;
         }
 
-        public Builder delayErrors(boolean delayErrors) {
-            this.delayErrors = delayErrors;
+        public Builder method(HttpMethod method) {
+            this.method = method;
             return this;
         }
 
         public <T> Flowable<T> serializer(Serializer<T> serializer) {
-            return get(url, delayErrors, bufferSize, serializer);
+            return build().map(serializer::deserialize);
         }
 
         public <T extends Serializable> Flowable<T> deserialized() {
@@ -58,42 +56,42 @@ public final class Client {
         }
 
         public Flowable<ByteBuffer> build() {
-            return get(url, delayErrors, bufferSize);
+            if (bufferSize == 0) {
+                return toFlowable(url, method);
+            } else {
+                return toFlowable(url, method).rebatchRequests(bufferSize);
+            }
         }
     }
 
-    private static <T> Flowable<T> get(String url, boolean delayErrors, int bufferSize, Serializer<T> serializer) {
-        return get(url, delayErrors, bufferSize).map(serializer::deserialize);
-    }
-
-    private static Flowable<ByteBuffer> get(String url, boolean delayErrors, int bufferSize) {
-        Preconditions.checkArgument(bufferSize > 0);
-        final URL u;
+    private static Flowable<ByteBuffer> toFlowable(String url, HttpMethod method) {
+        URL u;
         try {
-            u = new URL(url + "/?r=" + bufferSize);
+            u = new URL(url);
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
-
-        BiConsumer<Long, Long> requester = new Requester(url);
+        BiConsumer<Long, Long> requester = new Requester(url, method);
 
         return Flowable.using( //
                 () -> {
                     HttpURLConnection con = (HttpURLConnection) u.openConnection();
-                    con.setRequestMethod("GET");
+                    con.setRequestMethod(method.method());
                     con.setUseCaches(false);
                     return con.getInputStream();
                 }, //
-                in -> read(Single.just(in), requester, delayErrors, bufferSize), //
+                in -> read(Single.just(in), requester), //
                 in -> Util.close(in));
     }
 
     static final class Requester implements BiConsumer<Long, Long> {
 
         private final String url;
+        private final HttpMethod method;
 
-        Requester(String url) {
+        Requester(String url, HttpMethod method) {
             this.url = url;
+            this.method = method;
         }
 
         @Override
@@ -101,7 +99,7 @@ public final class Client {
             try {
                 HttpURLConnection con = (HttpURLConnection) new URL(url + "?id=" + id + "&r=" + request) //
                         .openConnection();
-                con.setRequestMethod("GET");
+                con.setRequestMethod(method.method());
                 con.setUseCaches(false);
                 int code = con.getResponseCode();
                 if (code != 200) {
@@ -113,10 +111,8 @@ public final class Client {
         }
     }
 
-    public static Flowable<ByteBuffer> read(Single<InputStream> inSource, BiConsumer<Long, Long> requester,
-            boolean delayErrors, int bufferSize) {
-        return new FlowableSingleFlatMapPublisher<>(inSource, in -> new FlowableFromInputStream(in, requester))
-                .rebatchRequests(bufferSize);
+    public static Flowable<ByteBuffer> read(Single<InputStream> inSource, BiConsumer<Long, Long> requester) {
+        return new FlowableSingleFlatMapPublisher<>(inSource, in -> new FlowableFromInputStream(in, requester));
     }
 
 }
