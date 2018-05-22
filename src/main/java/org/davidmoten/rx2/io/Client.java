@@ -9,6 +9,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 
 import org.davidmoten.rx2.io.internal.FlowableFromInputStream;
+import org.davidmoten.rx2.io.internal.FlowableSingleFlatMapPublisher;
 import org.davidmoten.rx2.io.internal.Util;
 
 import com.github.davidmoten.guavamini.Preconditions;
@@ -19,9 +20,9 @@ import io.reactivex.functions.BiConsumer;
 import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Client {
-    
+
     private Client() {
-        //prevent instantiation
+        // prevent instantiation
     }
 
     public static Builder get(String url) {
@@ -114,9 +115,8 @@ public final class Client {
 
     public static Flowable<ByteBuffer> read(Single<InputStream> inSource, BiConsumer<Long, Long> requester,
             boolean delayErrors, int bufferSize) {
-        return inSource //
-                .toFlowable() //
-                .flatMap(in -> new FlowableFromInputStream(in, requester), delayErrors, 1, bufferSize);
+        return new FlowableSingleFlatMapPublisher<>(inSource, in -> new FlowableFromInputStream(in, requester))
+                .rebatchRequests(bufferSize);
     }
 
 }
