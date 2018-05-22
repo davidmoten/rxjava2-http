@@ -11,7 +11,6 @@ import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.exceptions.Exceptions;
 import io.reactivex.functions.Function;
 import io.reactivex.internal.subscriptions.SubscriptionHelper;
 
@@ -20,28 +19,28 @@ public final class FlowableSingleFlatMapPublisher<S, T> extends Flowable<T> {
     private final Single<S> source;
     private final Function<? super S, ? extends Publisher<T>> mapper;
 
-    public FlowableSingleFlatMapPublisher(Single<S> source,
-            Function<? super S, ? extends Flowable<T>> mapper) {
+    public FlowableSingleFlatMapPublisher(Single<S> source, Function<? super S, ? extends Flowable<T>> mapper) {
         this.source = source;
         this.mapper = mapper;
     }
 
     @Override
     protected void subscribeActual(Subscriber<? super T> child) {
-        FlatMapSingleObserver<S, T> subscriber = new FlatMapSingleObserver<S, T>(child, mapper);
+        SingleFlatMapPublisherObserver<S, T> subscriber = new SingleFlatMapPublisherObserver<S, T>(child, mapper);
         source.subscribe(subscriber);
     }
 
-    static final class FlatMapSingleObserver<S, T>
+    static final class SingleFlatMapPublisherObserver<S, T> extends AtomicLong
             implements SingleObserver<S>, Subscriber<T>, Subscription {
+
+        private static final long serialVersionUID = 7759721921468635667L;
 
         private final Subscriber<? super T> child;
         private final Function<? super S, ? extends Publisher<T>> mapper;
         private Disposable disposable;
         private final AtomicReference<Subscription> parent = new AtomicReference<>();
-        private final AtomicLong requested = new AtomicLong();
 
-        FlatMapSingleObserver(Subscriber<? super T> child,
+        SingleFlatMapPublisherObserver(Subscriber<? super T> child,
                 Function<? super S, ? extends Publisher<T>> mapper) {
             this.child = child;
             this.mapper = mapper;
@@ -59,7 +58,6 @@ public final class FlowableSingleFlatMapPublisher<S, T> extends Flowable<T> {
             try {
                 f = mapper.apply(value);
             } catch (Exception e) {
-                Exceptions.throwIfFatal(e);
                 child.onError(e);
                 return;
             }
@@ -68,7 +66,7 @@ public final class FlowableSingleFlatMapPublisher<S, T> extends Flowable<T> {
 
         @Override
         public void onSubscribe(Subscription s) {
-            SubscriptionHelper.deferredSetOnce(parent, requested, s);
+            SubscriptionHelper.deferredSetOnce(parent, this, s);
         }
 
         @Override
@@ -88,7 +86,7 @@ public final class FlowableSingleFlatMapPublisher<S, T> extends Flowable<T> {
 
         @Override
         public void request(long n) {
-            SubscriptionHelper.deferredRequest(parent, requested, n);
+            SubscriptionHelper.deferredRequest(parent, this, n);
         }
 
         @Override
