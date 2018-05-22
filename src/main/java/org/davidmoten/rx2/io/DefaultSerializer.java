@@ -3,6 +3,7 @@ package org.davidmoten.rx2.io;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 
@@ -29,7 +30,17 @@ public final class DefaultSerializer<T extends Serializable> implements Serializ
     @Override
     public ByteBuffer serialize(T t) {
         NoCopyByteArrayOutputStream bytes = new NoCopyByteArrayOutputStream(bufferSize);
-        return serialize(t, bytes);
+        serialize(t, bytes);
+        return bytes.asByteBuffer();
+    }
+
+    @VisibleForTesting
+    static <T> void serialize(T t, OutputStream bytes) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(bytes)) {
+            oos.writeObject(t);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -42,14 +53,4 @@ public final class DefaultSerializer<T extends Serializable> implements Serializ
         }
     }
     
-    @VisibleForTesting
-    static <T> ByteBuffer serialize(T t, NoCopyByteArrayOutputStream bytes) {
-        try (ObjectOutputStream oos = new ObjectOutputStream(bytes)) {
-            oos.writeObject(t);
-            return bytes.asByteBuffer();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
 }
