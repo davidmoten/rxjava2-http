@@ -56,6 +56,10 @@ Flowable<Integer> numbers =
 	  .rebatchRequests(128); // necessary to enable backpressure over the network without blocking calls
 ```
 
+### Serializers
+
+`Serializer.javaIo()` can be used to serialize classes that implement `Serializable`. It is much slower than products like *Kryo* or indeed if you have the time, custom serialization.
+
 ## Design
 WebSockets is a natural for this but can be blocked by corporate firewalls so this library starts with support for HTTP 1.0. 
 
