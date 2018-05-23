@@ -38,7 +38,7 @@ public class ClientTest {
         Asserts.assertIsUtilityClass(Client.class);
     }
 
-    //@Test
+    // @Test
     public void testGetWithClient() throws Exception {
         Server server = createServer(SOURCE);
         try {
@@ -49,7 +49,7 @@ public class ClientTest {
             Client.read(Single.fromCallable(() -> con.getInputStream()), requester) //
                     .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
-                    .timeout(2,  TimeUnit.SECONDS) //
+                    .timeout(2, TimeUnit.SECONDS) //
                     .test() //
                     .awaitDone(5, TimeUnit.SECONDS) //
                     .assertValue(3 + 4) //
@@ -149,11 +149,11 @@ public class ClientTest {
             ts.assertNoValues() //
                     .assertNotTerminated();
             // 16 pre-request and 16 from flatmap
-            assertEquals(Arrays.asList(16L, 16L), requests);
+            assertEquals(Arrays.asList(), requests);
             ts.requestMore(1);
             Thread.sleep(300);
             ts.assertValue(1);
-            assertEquals(Arrays.asList(16L, 16L), requests);
+            assertEquals(Arrays.asList(1L), requests);
             ts.requestMore(2);
             Thread.sleep(300);
             ts.assertValues(1, 2, 3);
@@ -197,7 +197,8 @@ public class ClientTest {
             Client.get("http://localhost:8080/") //
                     .method(HttpMethod.POST) //
                     .bufferSize(100) //
-                    .build().reduce(0, (x, bb) -> x + bb.remaining()) //
+                    .build() //
+                    .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
                     .assertValue(3 + 4) //
