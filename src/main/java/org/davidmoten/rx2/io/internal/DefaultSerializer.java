@@ -1,4 +1,4 @@
-package org.davidmoten.rx2.io;
+package org.davidmoten.rx2.io.internal;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -7,8 +7,7 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 
-import org.davidmoten.rx2.io.internal.ByteBufferInputStream;
-import org.davidmoten.rx2.io.internal.NoCopyByteArrayOutputStream;
+import org.davidmoten.rx2.io.Serializer;
 
 import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 

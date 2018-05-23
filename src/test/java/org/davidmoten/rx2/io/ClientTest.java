@@ -113,11 +113,12 @@ public class ClientTest {
 
     @Test
     public void testRange() throws Exception {
-        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(DefaultSerializer.instance()::serialize);
+        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
         Server server = createServer(flowable);
         try {
-            Client.get("http://localhost:8080/") // s
+            Client.get("http://localhost:8080/") //
                     .<Integer>deserialized() //
+                    .doOnRequest(System.out::println) //
                     .skip(500) //
                     .take(4) //
                     .test() //
@@ -135,7 +136,7 @@ public class ClientTest {
         List<Long> requests = new CopyOnWriteArrayList<>();
         AtomicBoolean cancelled = new AtomicBoolean();
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000) //
-                .map(DefaultSerializer.instance()::serialize) //
+                .map(Serializer.javaIo()::serialize) //
                 .doOnRequest(n -> requests.add(n)) //
                 .doOnCancel(() -> cancelled.set(true));
         Server server = createServer(flowable);
@@ -169,10 +170,10 @@ public class ClientTest {
 
     @Test
     public void testRangeParallel() throws Exception {
-        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(DefaultSerializer.instance()::serialize);
+        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
         Server server = createServer(flowable);
         try {
-            Flowable<Integer> f = Client.get("http://localhost:8080/") // 
+            Flowable<Integer> f = Client.get("http://localhost:8080/") //
                     .<Integer>deserialized() //
                     .skip(500) //
                     .take(4);

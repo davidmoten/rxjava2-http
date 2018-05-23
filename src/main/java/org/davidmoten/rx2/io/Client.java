@@ -52,7 +52,7 @@ public final class Client {
         }
 
         public <T extends Serializable> Flowable<T> deserialized() {
-            return serializer(DefaultSerializer.instance());
+            return serializer(Serializer.javaIo());
         }
 
         public Flowable<ByteBuffer> build() {
@@ -112,7 +112,7 @@ public final class Client {
     }
 
     public static Flowable<ByteBuffer> read(Single<InputStream> inSource, BiConsumer<Long, Long> requester) {
-        return new FlowableSingleFlatMapPublisher<>(inSource, in -> new FlowableFromInputStream(in, requester));
+        return new FlowableSingleFlatMapPublisher<>(inSource, in -> new FlowableFromInputStream(in, requester)).doOnRequest(n ->System.out.println("requested==" + n));
     }
 
 }

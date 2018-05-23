@@ -76,6 +76,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         @Override
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
+                System.out.println("requested " + n);
                 BackpressureHelper.add(requested, n);
                 try {
                     requester.accept(id, n);

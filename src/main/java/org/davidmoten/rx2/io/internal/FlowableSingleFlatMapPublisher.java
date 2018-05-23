@@ -13,13 +13,15 @@ import io.reactivex.SingleSource;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function;
 import io.reactivex.internal.subscriptions.SubscriptionHelper;
+import io.reactivex.internal.util.EmptyComponent;
 
 public final class FlowableSingleFlatMapPublisher<S, T> extends Flowable<T> {
 
     private final SingleSource<S> source;
     private final Function<? super S, ? extends Publisher<? extends T>> mapper;
 
-    public FlowableSingleFlatMapPublisher(SingleSource<S> source, Function<? super S, ? extends Flowable<? extends T>> mapper) {
+    public FlowableSingleFlatMapPublisher(SingleSource<S> source,
+            Function<? super S, ? extends Flowable<? extends T>> mapper) {
         this.source = source;
         this.mapper = mapper;
     }
@@ -49,7 +51,11 @@ public final class FlowableSingleFlatMapPublisher<S, T> extends Flowable<T> {
         @Override
         public void onSubscribe(Disposable d) {
             this.disposable = d;
-            child.onSubscribe(this);
+            if (d.isDisposed()) {
+                child.onSubscribe(EmptyComponent.INSTANCE);
+            } else {
+                child.onSubscribe(this);
+            }
         }
 
         @Override
