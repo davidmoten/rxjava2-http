@@ -57,10 +57,10 @@ More client options are available. Here is an example:
 Flowable<Integer> numbers = 
 	Client
 	  .get("http://localhost:8080/stream") //
-	  .method(HttpMethod.GET) // request in batches of 100, default is 16
-	  .serializer(serializer) // used for deserialization
+	  .method(HttpMethod.GET) // 
+	.serializer(serializer) // used for deserialization
 	  .rebatchRequests(128); // necessary to enable backpressure over the network without blocking calls
-```
+
 
 ### Serializers
 
