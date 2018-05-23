@@ -42,7 +42,7 @@ public class ClientTest {
     public void testGetWithClient() throws Exception {
         Server server = createServer(SOURCE);
         try {
-            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100").openConnection();
+            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/").openConnection();
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             BiConsumer<Long, Long> requester = createRequester();
@@ -50,7 +50,7 @@ public class ClientTest {
                     .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
-                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .awaitDone(5, TimeUnit.SECONDS) //
                     .assertValue(3 + 4) //
                     .assertComplete();
             assertEquals(HttpStatus.OK_200, con.getResponseCode());

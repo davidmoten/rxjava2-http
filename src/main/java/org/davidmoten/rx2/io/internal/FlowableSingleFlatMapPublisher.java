@@ -51,11 +51,7 @@ public final class FlowableSingleFlatMapPublisher<S, T> extends Flowable<T> {
         @Override
         public void onSubscribe(Disposable d) {
             this.disposable = d;
-            if (d.isDisposed()) {
-                child.onSubscribe(EmptyComponent.INSTANCE);
-            } else {
-                child.onSubscribe(this);
-            }
+            child.onSubscribe(this);
         }
 
         @Override
