@@ -48,7 +48,7 @@ Assuming the servlet above is listening on `http://localhost:8080/stream`, this 
 ```java
 Flowable<Integer> numbers = 
     Client
-       .get("http://localhost:8080/")
+       .get("http://localhost:8080/stream")
        .deserialized();
 ```
 More client options are available. Here is an example:
@@ -56,7 +56,7 @@ More client options are available. Here is an example:
 ```java
 Flowable<Integer> numbers = 
 	Client
-	  .get("http://localhost:8080/") //
+	  .get("http://localhost:8080/stream") //
 	  .method(HttpMethod.GET) // request in batches of 100, default is 16
 	  .serializer(serializer) // used for deserialization
 	  .rebatchRequests(128); // necessary to enable backpressure over the network without blocking calls
