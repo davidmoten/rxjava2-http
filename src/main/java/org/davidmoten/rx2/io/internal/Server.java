@@ -82,6 +82,7 @@ public final class Server {
             this.out = os;
             try {
                 out.write(Util.toBytes(id));
+                out.flush();
                 System.out.println("written id");
             } catch (IOException e) {
                 error = e;
@@ -217,6 +218,7 @@ public final class Server {
                 // mark as error by reporting length as negative
                 writeInt(out, -bytes.size());
                 bytes.write(out);
+                out.flush();
             } catch (IOException e) {
                 RxJavaPlugins.onError(e);
             } finally {

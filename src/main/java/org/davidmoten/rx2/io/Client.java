@@ -67,7 +67,7 @@ public final class Client {
     private static Flowable<ByteBuffer> toFlowable(String url, HttpMethod method) {
         URL u;
         try {
-            u = new URL(url + "?r=100");
+            u = new URL(url + "");
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
