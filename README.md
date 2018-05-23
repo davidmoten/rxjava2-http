@@ -68,7 +68,14 @@ Flowable<Integer> numbers =
 
 ### Good practices
 
-Note that a quiet source Flowable over http(s) is indistinguishable from a chopped connection (by a firewall for instance). To avoid this:
+### Backpressure
+To ensure backpressure is applied over the network (so operating system IO buffers don't fill and block threads) it's a good idea to request data in batches:
+
+* apply `rebatchRequests` to the client-side Flowable
+* `rxjava2-extras` has a number of request manipulating operators (`minRequest`, `maxRequest` and another version of `rebatchRequests` with different control)
+
+### Quiet streams
+Note that a long running quiet source Flowable over http(s) is indistinguishable from a chopped connection (by a firewall for instance). To avoid this:
 
 * regularly cancel and reconnect to the stream
 
@@ -78,7 +85,7 @@ OR
 
 OR
 
-* put a `timeout` operator on the Flowable on the client side
+* put a `timeout` operator on the Flowable on the client side and `retry`
 
 ## Design
 WebSockets is a natural for this but can be blocked by corporate firewalls so this library starts with support for HTTP 1.0. 
