@@ -3,9 +3,15 @@
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.davidmoten/rxjava2-http/badge.svg?style=flat)](https://maven-badges.herokuapp.com/maven-central/com.github.davidmoten/rxjava2-http)<br/>
 [![codecov](https://codecov.io/gh/davidmoten/rxjava2-http/branch/master/graph/badge.svg)](https://codecov.io/gh/davidmoten/rxjava2-http)
 
-Transmit RxJava2 Flowable over http (with backpressure of course)
+Transmit RxJava2 Flowable over http (with backpressure of course).
 
 Status: *pre-alpha* (in development)
+
+## Features
+* Apply non-blocking backpressure to streams over networks
+* use whatever serialization library you want (the core supports `Flowable<ByteBuffer>`)
+* supports plain HTTP/HTTPS service (no firewall troubles with WebSockets)
+* may support NIO later
 
 ## Getting started
 
