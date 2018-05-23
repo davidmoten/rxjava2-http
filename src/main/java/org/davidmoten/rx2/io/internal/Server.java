@@ -82,6 +82,7 @@ public final class Server {
             this.out = os;
             try {
                 out.write(Util.toBytes(id));
+                System.out.println("written id");
             } catch (IOException e) {
                 error = e;
                 finished = true;

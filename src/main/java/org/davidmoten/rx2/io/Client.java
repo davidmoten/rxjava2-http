@@ -113,6 +113,7 @@ public final class Client {
 
     public static Flowable<ByteBuffer> read(Single<InputStream> inSource, BiConsumer<Long, Long> requester) {
         return new FlowableSingleFlatMapPublisher<>(inSource, in -> new FlowableFromInputStream(in, requester)).doOnRequest(n ->System.out.println("requested==" + n));
+        //return inSource.flatMapPublisher(in -> new FlowableFromInputStream(in, requester));
     }
 
 }

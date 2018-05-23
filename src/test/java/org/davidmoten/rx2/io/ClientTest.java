@@ -46,9 +46,12 @@ public class ClientTest {
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             BiConsumer<Long, Long> requester = createRequester();
-            Client.read(Single.just(con.getInputStream()), requester) //
+            InputStream in = con.getInputStream();
+            System.out.println("have input stream");
+            Client.read(Single.just(in), requester) //
                     .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
+                    .doOnSubscribe(d -> System.out.println("subd")) //
                     .test() //
                     .awaitDone(5, TimeUnit.SECONDS) //
                     .assertValue(3 + 4) //
