@@ -151,7 +151,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                                 }
                             }
                         } catch (Throwable ex) {
-                            Exceptions.throwIfFatal(ex);
                             emitError(ex);
                             return;
                         }

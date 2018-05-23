@@ -108,12 +108,30 @@ public class ClientTest {
         try {
             Client.get("http://localhost:8080/") //
                     .build() //
-                    .doOnError(System.out::println) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
                     .assertNoValues() //
-                    .assertError(
-                            e -> e.getMessage().startsWith("java.lang.RuntimeException: boo"));
+                    .assertError(e -> e.getMessage().startsWith("java.lang.RuntimeException: boo"));
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testValuesThenError() throws Exception {
+        RuntimeException ex = new RuntimeException("boo");
+        Server server = createServer( //
+                Flowable.just(1, 2, 3) //
+                        .concatWith(Flowable.error(ex)) //
+                        .map(Serializer.javaIo()::serialize));
+        try {
+            Client.get("http://localhost:8080/") //
+                    .deserialized() //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertValues(1, 2, 3) //
+                    .assertError(e -> e.getMessage().startsWith("java.lang.RuntimeException: boo"));
         } finally {
             // Stop Server
             server.stop();
