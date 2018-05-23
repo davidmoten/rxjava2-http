@@ -30,7 +30,7 @@ public final class Client {
     static final class Builder {
 
         private final String url;
-        private int bufferSize = 0;
+        private int bufferSize;
         private HttpMethod method = HttpMethod.GET;
 
         Builder(String url) {
@@ -67,7 +67,7 @@ public final class Client {
     private static Flowable<ByteBuffer> toFlowable(String url, HttpMethod method) {
         URL u;
         try {
-            u = new URL(url);
+            u = new URL(url + "?r=100");
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
@@ -113,7 +113,7 @@ public final class Client {
 
     public static Flowable<ByteBuffer> read(Single<InputStream> inSource, BiConsumer<Long, Long> requester) {
         return new FlowableSingleFlatMapPublisher<>(inSource, in -> new FlowableFromInputStream(in, requester)).doOnRequest(n ->System.out.println("requested==" + n));
-        //return inSource.flatMapPublisher(in -> new FlowableFromInputStream(in, requester));
+        //return inSource.flatMapPublisher(in -> new FlowableFromInputStream(in, requester));s
     }
 
 }
