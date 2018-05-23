@@ -48,7 +48,7 @@ public class FlowableHttpServlet extends HttpServlet {
         try {
             flowable = flowableFactory.apply(req);
         } catch (Throwable e) {
-            handler.onError(e, req, resp);
+            handler.doGet(Flowable.error(e), req, resp);
             return;
         }
         handler.doGet(flowable, req, resp);

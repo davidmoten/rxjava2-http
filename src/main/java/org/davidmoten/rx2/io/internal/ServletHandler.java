@@ -99,8 +99,4 @@ public final class ServletHandler {
         map.clear();
     }
 
-    public void onError(Throwable e, HttpServletRequest req, HttpServletResponse resp) {
-        // TODO Auto-generated method stub
-        
-    }
 }
