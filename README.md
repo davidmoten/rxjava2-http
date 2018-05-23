@@ -35,7 +35,7 @@ public class HandlerServlet extends FlowableHttpServlet {
         super(
           Flowable
             .range(1,1000)
-            .map(DefaultSerializer.instance()::serialize)      
+            .map(Serializer.javaIo()::serialize)      
         );
     }
 }
