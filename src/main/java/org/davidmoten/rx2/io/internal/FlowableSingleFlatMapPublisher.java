@@ -13,7 +13,6 @@ import io.reactivex.SingleSource;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function;
 import io.reactivex.internal.subscriptions.SubscriptionHelper;
-import io.reactivex.internal.util.EmptyComponent;
 
 public final class FlowableSingleFlatMapPublisher<S, T> extends Flowable<T> {
 

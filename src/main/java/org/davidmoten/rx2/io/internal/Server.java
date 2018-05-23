@@ -1,9 +1,10 @@
 package org.davidmoten.rx2.io.internal;
 
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.reactivestreams.Subscriber;
@@ -26,8 +27,9 @@ public final class Server {
         // prevent instantiation
     }
 
-    public static void handle(Flowable<ByteBuffer> flowable, Single<OutputStream> out, Runnable done, long id,
-            Scheduler requestScheduler, Consumer<Subscription> subscription) {
+    public static void handle(Flowable<ByteBuffer> flowable, Single<OutputStream> out,
+            Runnable done, long id, Scheduler requestScheduler,
+            Consumer<Subscription> subscription) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
         HandlerSubscriber subscriber = new HandlerSubscriber(out, done, id, requestScheduler);
@@ -57,7 +59,8 @@ public final class Server {
         private volatile boolean cancelled;
         private Disposable disposable;
 
-        HandlerSubscriber(Single<OutputStream> outSource, Runnable completion, long id, Scheduler requestScheduler) {
+        HandlerSubscriber(Single<OutputStream> outSource, Runnable completion, long id,
+                Scheduler requestScheduler) {
             this.outSource = outSource;
             this.completion = completion;
             this.id = id;
@@ -210,9 +213,8 @@ public final class Server {
             try {
                 // set initial size to cover size of most stack traces
                 NoCopyByteArrayOutputStream bytes = new NoCopyByteArrayOutputStream(4096);
-                ObjectOutputStream oos = new ObjectOutputStream(bytes);
-                oos.writeObject(err);
-                oos.close();
+                err.printStackTrace(new PrintStream(bytes, true, "UTF-8"));
+                bytes.close();
 
                 // mark as error by reporting length as negative
                 writeInt(out, -bytes.size());

@@ -5,9 +5,11 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.davidmoten.rx2.io.Serializer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -118,20 +120,35 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                                 child.onComplete();
                                 return;
                             }
-                            buffer = new byte[length];
+                            buffer = new byte[Math.abs(length)];
                             bufferIndex = 0;
                         }
                         try {
-                            int count = in.read(buffer, bufferIndex, length - bufferIndex);
+                            int count = in.read(buffer, bufferIndex,
+                                    Math.abs(length) - bufferIndex);
                             bufferIndex += count;
                             if (count == -1) {
                                 emitError(new EOFException(
                                         "encountered EOF before expected length was read"));
                                 return;
-                            } else if (bufferIndex == length) {
-                                child.onNext(ByteBuffer.wrap(buffer, 0, length));
-                                buffer = null;
-                                e++;
+                            } else if (bufferIndex == Math.abs(length)) {
+                                if (length < 0) {
+                                    String t;
+                                    try {
+                                        t = new String(buffer, 0, -length, StandardCharsets.UTF_8);
+                                    } catch (Throwable e2) {
+                                        child.onError(new RuntimeException(
+                                                "could not deserialize error from stream", e2));
+                                        return;
+                                    }
+                                    buffer = null;
+                                    child.onError(new RuntimeException(t));
+                                    return;
+                                } else {
+                                    child.onNext(ByteBuffer.wrap(buffer, 0, length));
+                                    buffer = null;
+                                    e++;
+                                }
                             }
                         } catch (Throwable ex) {
                             Exceptions.throwIfFatal(ex);

@@ -30,19 +30,25 @@ import io.reactivex.subscribers.TestSubscriber;
 
 public class ClientTest {
 
-    private static final Flowable<ByteBuffer> SOURCE = Flowable.just(ByteBuffer.wrap(new byte[] { 1, 2, 3 }),
-            ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
+    private static final Flowable<ByteBuffer> SOURCE = Flowable.just(
+            ByteBuffer.wrap(new byte[] { 1, 2, 3 }), ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
 
     @Test
     public void isUtilityClass() {
         Asserts.assertIsUtilityClass(Client.class);
     }
 
+    @Test(expected = RuntimeException.class)
+    public void testBadUrl() {
+        Client.get("url").build();
+    }
+
     // @Test
     public void testGetWithClient() throws Exception {
         Server server = createServer(SOURCE);
         try {
-            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/").openConnection();
+            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/")
+                    .openConnection();
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             BiConsumer<Long, Long> requester = createRequester();
@@ -89,6 +95,25 @@ public class ClientTest {
                     .awaitDone(10, TimeUnit.SECONDS) //
                     .assertValueCount(1) //
                     .assertComplete();
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testError() throws Exception {
+        RuntimeException ex = new RuntimeException("boo");
+        Server server = createServer(Flowable.error(ex));
+        try {
+            Client.get("http://localhost:8080/") //
+                    .build() //
+                    .doOnError(System.out::println) //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertNoValues() //
+                    .assertError(
+                            e -> e.getMessage().startsWith("java.lang.RuntimeException: boo"));
         } finally {
             // Stop Server
             server.stop();
@@ -232,7 +257,8 @@ public class ClientTest {
         try {
             // Start Server
             server.start();
-            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100").openConnection();
+            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100")
+                    .openConnection();
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             InputStream in = con.getInputStream();
@@ -281,8 +307,8 @@ public class ClientTest {
 
             @Override
             public void accept(Long id, Long request) throws Exception {
-                HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?id=" + id + "&r=" + request)
-                        .openConnection();
+                HttpURLConnection con = (HttpURLConnection) new URL(
+                        "http://localhost:8080/?id=" + id + "&r=" + request).openConnection();
                 con.setRequestMethod("GET");
                 con.setUseCaches(false);
                 assertEquals(HttpStatus.OK_200, con.getResponseCode());
