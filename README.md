@@ -60,6 +60,16 @@ Flowable<Integer> numbers =
 
 `Serializer.javaIo()` can be used to serialize classes that implement `Serializable`. It is much slower than products like *Kryo* or indeed if you have the time, custom serialization.
 
+### Good practices
+
+Note that a quiet source Flowable over http(s) is indistinguishable from a chopped connection (by a firewall for instance). To avoid this:
+
+* regularly cancel and reconnect to the stream
+OR
+* include a heartbeat emission in the Flowable which you filter out on the client side
+OR
+* put a `timeout` operator on the Flowable on the client side
+
 ## Design
 WebSockets is a natural for this but can be blocked by corporate firewalls so this library starts with support for HTTP 1.0. 
 
