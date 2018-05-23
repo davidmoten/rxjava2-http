@@ -87,6 +87,14 @@ OR
 
 * put a `timeout` operator on the Flowable on the client side and `retry`
 
+### Orphan streams on the server
+
+It's also a good idea to:
+
+*  put a `timeout` operator on the server Flowable in case a client leaves (or is killed) without cancelling
+
+This goes for any server Flowable, even one that is normally of very short duration. This is because the subscription is retained in a global map until cancellation and will retain some memory.
+
 ## Design
 WebSockets is a natural for this but can be blocked by corporate firewalls so this library starts with support for HTTP 1.0. 
 
