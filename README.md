@@ -65,9 +65,13 @@ Flowable<Integer> numbers =
 Note that a quiet source Flowable over http(s) is indistinguishable from a chopped connection (by a firewall for instance). To avoid this:
 
 * regularly cancel and reconnect to the stream
+
 OR
+
 * include a heartbeat emission in the Flowable which you filter out on the client side
+
 OR
+
 * put a `timeout` operator on the Flowable on the client side
 
 ## Design
