@@ -30,16 +30,10 @@ public final class Client {
     static final class Builder {
 
         private final String url;
-        private int bufferSize;
         private HttpMethod method = HttpMethod.GET;
 
         Builder(String url) {
             this.url = url;
-        }
-
-        public Builder bufferSize(int n) {
-            this.bufferSize = n;
-            return this;
         }
 
         public Builder method(HttpMethod method) {
@@ -56,11 +50,7 @@ public final class Client {
         }
 
         public Flowable<ByteBuffer> build() {
-            if (bufferSize == 0) {
-                return toFlowable(url, method);
-            } else {
-                return toFlowable(url, method).rebatchRequests(bufferSize);
-            }
+            return toFlowable(url, method);
         }
     }
 
