@@ -110,7 +110,8 @@ The format returned in the subscribe calls is (EBNF):
 ```
 Stream ::= Id Item* ( Error | Complete )?
 Item ::= Length Byte*
-Error ::= NegativeLength Byte*
+Error ::= NegativeLength StackTrace 
+StackTrace ::= Byte+
 Complete ::= NegativeMinLength
 ```
 

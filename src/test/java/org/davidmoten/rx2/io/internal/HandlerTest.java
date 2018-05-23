@@ -4,13 +4,11 @@ import static org.junit.Assert.assertArrayEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.davidmoten.rx2.io.internal.Server;
-import org.davidmoten.rx2.io.internal.Util;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
@@ -54,11 +52,10 @@ public class HandlerTest {
         assertArrayEquals(expected.toByteArray(), out.toByteArray());
     }
 
-    private static byte[] serialize(Object o) throws IOException {
+    private static byte[] serialize(Throwable t) throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        try (ObjectOutputStream oos = new ObjectOutputStream(bytes)) {
-            oos.writeObject(o);
-        }
+        PrintStream out = new PrintStream(bytes, true, "UTF-8");
+        t.printStackTrace(out);
         return bytes.toByteArray();
     }
 }
