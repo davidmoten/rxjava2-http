@@ -191,12 +191,29 @@ public class ClientTest {
     }
 
     @Test
-    public void testGetWithClientAbbreviated() throws Exception {
+    public void testGetWithClient2() throws Exception {
+        Server server = createServer(SOURCE);
+        try {
+            Client.get("http://localhost:8080/") //
+                    .method(HttpMethod.GET) //
+                    .build() //
+                    .reduce(0, (x, bb) -> x + bb.remaining()) //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertValue(3 + 4) //
+                    .assertComplete();
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testGetWithClientHttpPost() throws Exception {
         Server server = createServer(SOURCE);
         try {
             Client.get("http://localhost:8080/") //
                     .method(HttpMethod.POST) //
-                    .bufferSize(100) //
                     .build() //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
