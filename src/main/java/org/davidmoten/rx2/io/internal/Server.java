@@ -27,7 +27,7 @@ public final class Server {
         // prevent instantiation
     }
 
-    public static void handle(Flowable<ByteBuffer> flowable, Single<OutputStream> out,
+    public static void handle(Flowable<? extends ByteBuffer> flowable, Single<OutputStream> out,
             Runnable done, long id, Scheduler requestScheduler,
             Consumer<Subscription> subscription) {
         // when first request read (8 bytes) subscribe to Flowable

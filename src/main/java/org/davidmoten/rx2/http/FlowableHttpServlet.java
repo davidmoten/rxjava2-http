@@ -13,34 +13,45 @@ import org.davidmoten.rx2.io.internal.ServletHandler;
 
 import io.reactivex.Flowable;
 import io.reactivex.Scheduler;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
 public class FlowableHttpServlet extends HttpServlet {
 
     private static final long serialVersionUID = 5492424521743846011L;
 
-    private final Flowable<ByteBuffer> flowable;
     private final Scheduler requestScheduler;
+    private final Function<? super HttpServletRequest, ? extends Flowable<? extends ByteBuffer>> flowableFactory;
     private ServletHandler handler;
 
-    public FlowableHttpServlet(Flowable<ByteBuffer> flowable) {
-        this(flowable, Schedulers.io());
+    public FlowableHttpServlet(
+            Function<? super HttpServletRequest, ? extends Flowable<? extends ByteBuffer>> flowableFactory) {
+        this(flowableFactory, Schedulers.io());
     }
 
-    public FlowableHttpServlet(Flowable<ByteBuffer> flowable, Scheduler requestScheduler) {
-        this.flowable = flowable;
+    public FlowableHttpServlet(
+            Function<? super HttpServletRequest, ? extends Flowable<? extends ByteBuffer>> flowableFactory,
+            Scheduler requestScheduler) {
+        this.flowableFactory = flowableFactory;
         this.requestScheduler = requestScheduler;
     }
 
     @Override
     public void init(ServletConfig config) throws ServletException {
-        handler = ServletHandler.create(flowable, requestScheduler);
+        handler = ServletHandler.create(requestScheduler);
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        handler.doGet(req, resp);
+        Flowable<? extends ByteBuffer> flowable;
+        try {
+            flowable = flowableFactory.apply(req);
+        } catch (Throwable e) {
+            handler.onError(e, req, resp);
+            return;
+        }
+        handler.doGet(flowable, req, resp);
     }
 
     @Override

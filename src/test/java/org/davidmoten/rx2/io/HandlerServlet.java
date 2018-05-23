@@ -18,11 +18,12 @@ public final class HandlerServlet extends FlowableHttpServlet {
     public static Flowable<ByteBuffer> flowable = Flowable.empty();
 
     public HandlerServlet() {
-        super(flowable);
+        super(req -> flowable);
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
         doGet(req, resp);
     }
 

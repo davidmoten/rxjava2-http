@@ -25,25 +25,22 @@ public final class ServletHandler {
 
     private final Map<Long, Subscription> map = new ConcurrentHashMap<>();
 
-    private final Flowable<ByteBuffer> flowable;
-
     private final Scheduler requestScheduler;
 
-    public static ServletHandler create(Flowable<ByteBuffer> flowable, Scheduler requestScheduler) {
-        return new ServletHandler(flowable, requestScheduler);
+    public static ServletHandler create(Scheduler requestScheduler) {
+        return new ServletHandler(requestScheduler);
     }
 
-    private ServletHandler(Flowable<ByteBuffer> flowable, Scheduler requestScheduler) {
-        this.flowable = flowable;
+    private ServletHandler(Scheduler requestScheduler) {
         this.requestScheduler = requestScheduler;
     }
 
-    public void doGet(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException {
+    public void doGet(Flowable<? extends ByteBuffer> flowable, HttpServletRequest req,
+            HttpServletResponse resp) throws ServletException, IOException {
         String idString = req.getParameter("id");
         if (idString == null) {
             final long r = getRequest(req);
-            handleStream(resp.getOutputStream(), r);
+            handleStream(flowable, resp.getOutputStream(), r);
         } else {
             long id = Long.parseLong(idString);
             long request = Long.parseLong(req.getParameter("r"));
@@ -51,7 +48,7 @@ public final class ServletHandler {
         }
     }
 
-    private void handleStream(OutputStream out, long request) {
+    private void handleStream(Flowable<? extends ByteBuffer> flowable, OutputStream out, long request) {
         CountDownLatch latch = new CountDownLatch(1);
         long id = random.nextLong();
         Runnable done = () -> {
@@ -100,5 +97,10 @@ public final class ServletHandler {
             sub.cancel();
         }
         map.clear();
+    }
+
+    public void onError(Throwable e, HttpServletRequest req, HttpServletResponse resp) {
+        // TODO Auto-generated method stub
+        
     }
 }

@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.davidmoten.rx2.io.Serializer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
