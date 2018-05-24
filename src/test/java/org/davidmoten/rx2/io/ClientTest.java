@@ -46,7 +46,7 @@ public class ClientTest {
 
     // @Test
     public void testGetWithClient() throws Exception {
-        Server server = createServer(SOURCE);
+        Server server = createServerAsync(SOURCE);
         try {
             HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/")
                     .openConnection();
@@ -70,7 +70,7 @@ public class ClientTest {
 
     @Test
     public void testGetEmptyStream() throws Exception {
-        Server server = createServer(Flowable.empty());
+        Server server = createServerAsync(Flowable.empty());
         try {
             Client.get("http://localhost:8080/") //
                     .build() //
@@ -86,7 +86,7 @@ public class ClientTest {
 
     @Test
     public void testGetAsynchronousSource() throws Exception {
-        Server server = createServer( //
+        Server server = createServerAsync( //
                 Flowable.timer(300, TimeUnit.MILLISECONDS) //
                         .map(x -> ByteBuffer.wrap(new byte[] { 1 })));
         try {
@@ -105,7 +105,7 @@ public class ClientTest {
     @Test
     public void testError() throws Exception {
         RuntimeException ex = new RuntimeException("boo");
-        Server server = createServer(Flowable.error(ex));
+        Server server = createServerAsync(Flowable.error(ex));
         try {
             Client.get("http://localhost:8080/") //
                     .build() //
@@ -122,7 +122,7 @@ public class ClientTest {
     @Test
     public void testValuesThenError() throws Exception {
         RuntimeException ex = new RuntimeException("boo");
-        Server server = createServer( //
+        Server server = createServerAsync( //
                 Flowable.just(1, 2, 3) //
                         .concatWith(Flowable.error(ex)) //
                         .map(Serializer.javaIo()::serialize));
@@ -141,7 +141,7 @@ public class ClientTest {
 
     @Test
     public void testCancel() throws Exception {
-        Server server = createServer(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })).repeat());
+        Server server = createServerAsync(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })).repeat());
         try {
             Client.get("http://localhost:8080/") //
                     .build() //
@@ -159,7 +159,7 @@ public class ClientTest {
     @Test
     public void testRange() throws Exception {
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
-        Server server = createServer(flowable);
+        Server server = createServerAsync(flowable);
         try {
             Client.get("http://localhost:8080/") //
                     .<Integer>deserialized() //
@@ -179,7 +179,7 @@ public class ClientTest {
     @Test
     public void testRangeAsync() throws Exception {
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize).observeOn(Schedulers.io());
-        Server server = createServer(flowable);
+        Server server = createServerAsync(flowable);
         try {
             Client.get("http://localhost:8080/") //
                     .<Integer>deserialized() //
@@ -205,7 +205,7 @@ public class ClientTest {
                 .map(Serializer.javaIo()::serialize) //
                 .doOnRequest(n -> requests.add(n)) //
                 .doOnCancel(() -> cancelled.set(true));
-        Server server = createServer(flowable);
+        Server server = createServerAsync(flowable);
         try {
             TestSubscriber<Integer> ts = Client.get("http://localhost:8080/") // s
                     .<Integer>deserialized() //
@@ -237,7 +237,28 @@ public class ClientTest {
     @Test
     public void testRangeParallel() throws Exception {
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
-        Server server = createServer(flowable);
+        Server server = createServerAsync(flowable);
+        try {
+            Flowable<Integer> f = Client.get("http://localhost:8080/") //
+                    .<Integer>deserialized() //
+                    .skip(500) //
+                    .take(4);
+            f.zipWith(f, (a, b) -> a) //
+                    .timeout(5, TimeUnit.SECONDS) //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertValues(501, 502, 503, 504) //
+                    .assertComplete();
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+    
+    @Test
+    public void testRangeParallelSync() throws Exception {
+        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
+        Server server = createServerSync(flowable);
         try {
             Flowable<Integer> f = Client.get("http://localhost:8080/") //
                     .<Integer>deserialized() //
@@ -257,7 +278,7 @@ public class ClientTest {
 
     @Test
     public void testGetWithClient2() throws Exception {
-        Server server = createServer(SOURCE);
+        Server server = createServerAsync(SOURCE);
         try {
             Client.get("http://localhost:8080/") //
                     .method(HttpMethod.GET) //
@@ -275,7 +296,7 @@ public class ClientTest {
 
     @Test
     public void testGetWithClientHttpPost() throws Exception {
-        Server server = createServer(SOURCE);
+        Server server = createServerAsync(SOURCE);
         try {
             Client.get("http://localhost:8080/") //
                     .method(HttpMethod.POST) //
@@ -293,7 +314,7 @@ public class ClientTest {
 
     @Test
     public void testSimpleGet() throws Exception {
-        Server server = createServer(SOURCE);
+        Server server = createServerAsync(SOURCE);
         try {
             // Start Server
             server.start();
@@ -324,7 +345,7 @@ public class ClientTest {
         r.accept(1L, 1L);
     }
 
-    private static Server createServer(Flowable<ByteBuffer> flowable) {
+    private static Server createServerAsync(Flowable<ByteBuffer> flowable) {
         // Create Server
         Server server = new Server(8080);
         ServletContextHandler context = new ServletContextHandler();
@@ -334,6 +355,24 @@ public class ClientTest {
         context.addServlet(defaultServ, "/");
         server.setHandler(context);
         HandlerServletAsync.flowable = flowable;
+        try {
+            server.start();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return server;
+    }
+    
+    private static Server createServerSync(Flowable<ByteBuffer> flowable) {
+        // Create Server
+        Server server = new Server(8080);
+        ServletContextHandler context = new ServletContextHandler();
+        ServletHolder defaultServ = new ServletHolder("default", HandlerServletSync.class);
+        defaultServ.setInitParameter("resourceBase", System.getProperty("user.dir"));
+        defaultServ.setInitParameter("dirAllowed", "true");
+        context.addServlet(defaultServ, "/");
+        server.setHandler(context);
+        HandlerServletSync.flowable = flowable;
         try {
             server.start();
         } catch (Exception e) {

@@ -12,6 +12,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
+
 import io.reactivex.Flowable;
 import io.reactivex.exceptions.Exceptions;
 import io.reactivex.functions.BiConsumer;
@@ -46,15 +48,13 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         private long id;
 
         private volatile boolean cancelled;
-        private volatile Throwable error;
         private final BiConsumer<Long, Long> requester;
         private long emitted;
         private int length = 0;
         private byte[] buffer;
         private int bufferIndex;
 
-        FromStreamSubscriber(InputStream in, BiConsumer<Long, Long> requester,
-                Subscriber<? super ByteBuffer> child) {
+        FromStreamSubscriber(InputStream in, BiConsumer<Long, Long> requester, Subscriber<? super ByteBuffer> child) {
             this.in = in;
             this.requester = requester;
             this.child = child;
@@ -100,12 +100,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                         if (tryCancelled()) {
                             return;
                         }
-                        Throwable err = error;
-                        if (err != null) {
-                            error = null;
-                            emitError(err);
-                            return;
-                        }
                         // read some more
                         if (buffer == null) {
                             try {
@@ -123,23 +117,15 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                             bufferIndex = 0;
                         }
                         try {
-                            int count = in.read(buffer, bufferIndex,
-                                    Math.abs(length) - bufferIndex);
-                            bufferIndex += count;
+                            int count = in.read(buffer, bufferIndex, Math.abs(length) - bufferIndex);
                             if (count == -1) {
-                                emitError(new EOFException(
-                                        "encountered EOF before expected length was read"));
+                                emitError(new EOFException("encountered EOF before expected length was read"));
                                 return;
-                            } else if (bufferIndex == Math.abs(length)) {
+                            }
+                            bufferIndex += count;
+                            if (bufferIndex == Math.abs(length)) {
                                 if (length < 0) {
-                                    String t;
-                                    try {
-                                        t = new String(buffer, 0, -length, StandardCharsets.UTF_8);
-                                    } catch (Throwable e2) {
-                                        child.onError(new RuntimeException(
-                                                "could not deserialize error from stream", e2));
-                                        return;
-                                    }
+                                    String t = new String(buffer, 0, -length, StandardCharsets.UTF_8);
                                     buffer = null;
                                     child.onError(new RuntimeException(t));
                                     return;
@@ -181,16 +167,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
             close(in);
         }
 
-        private void close(Closeable c) {
-            if (c != null) {
-                try {
-                    c.close();
-                } catch (IOException e) {
-                    RxJavaPlugins.onError(e);
-                }
-            }
-        }
-
         @Override
         public void cancel() {
             cancelled = true;
@@ -207,4 +183,15 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
     }
 
+    
+    @VisibleForTesting
+    static void close(Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (IOException e) {
+                RxJavaPlugins.onError(e);
+            }
+        }
+    }
 }
