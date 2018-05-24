@@ -26,6 +26,7 @@ import com.github.davidmoten.junit.Asserts;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.functions.BiConsumer;
+import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subscribers.TestSubscriber;
 
 public class ClientTest {
@@ -174,6 +175,27 @@ public class ClientTest {
             server.stop();
         }
     }
+    
+    @Test
+    public void testRangeAsync() throws Exception {
+        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize).observeOn(Schedulers.io());
+        Server server = createServer(flowable);
+        try {
+            Client.get("http://localhost:8080/") //
+                    .<Integer>deserialized() //
+                    .rebatchRequests(10) //
+                    .doOnRequest(System.out::println) //
+                    .skip(500) //
+                    .take(4) //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertValues(501, 502, 503, 504) //
+                    .assertComplete();
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
 
     @Test
     public void testBackpressure() throws Exception {
@@ -306,12 +328,12 @@ public class ClientTest {
         // Create Server
         Server server = new Server(8080);
         ServletContextHandler context = new ServletContextHandler();
-        ServletHolder defaultServ = new ServletHolder("default", HandlerServlet.class);
+        ServletHolder defaultServ = new ServletHolder("default", HandlerServletAsync.class);
         defaultServ.setInitParameter("resourceBase", System.getProperty("user.dir"));
         defaultServ.setInitParameter("dirAllowed", "true");
         context.addServlet(defaultServ, "/");
         server.setHandler(context);
-        HandlerServlet.flowable = flowable;
+        HandlerServletAsync.flowable = flowable;
         try {
             server.start();
         } catch (Exception e) {

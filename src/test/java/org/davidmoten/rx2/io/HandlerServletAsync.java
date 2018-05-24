@@ -13,13 +13,13 @@ import org.davidmoten.rx2.http.FlowableHttpServlet;
 import io.reactivex.Flowable;
 
 @WebServlet(asyncSupported = true)
-public final class HandlerServlet extends FlowableHttpServlet {
+public final class HandlerServletAsync extends FlowableHttpServlet {
 
     private static final long serialVersionUID = 4294026368929063494L;
 
     public static Flowable<ByteBuffer> flowable = Flowable.empty();
 
-    public HandlerServlet() {
+    public HandlerServletAsync() {
         super(req -> flowable);
     }
 
