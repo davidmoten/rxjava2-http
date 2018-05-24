@@ -26,6 +26,7 @@
         <jmh.version>1.11.1</jmh.version>
         <exec.version>1.4.0</exec.version>
         <slf4j.version>1.7.12</slf4j.version>
+        <jetty.version>9.4.10.v20180503</jetty.version>
 
         <cobertura.version>2.7</cobertura.version>
         <checkstyle.version>2.16</checkstyle.version>
@@ -130,13 +131,13 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
-            <version>9.4.10.v20180503</version>
+            <version>${jetty.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlet</artifactId>
-            <version>9.4.10.v20180503</version>
+            <version>${jetty.version}</version>
             <scope>test</scope>
         </dependency>
 

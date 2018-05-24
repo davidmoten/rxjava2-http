@@ -9,9 +9,9 @@ Status: *pre-alpha* (in development)
 
 ## Features
 * Apply non-blocking backpressure to streams over networks
-* use whatever serialization library you want (the core supports `Flowable<ByteBuffer>`)
-* supports plain HTTP/HTTPS service (no firewall troubles with WebSockets)
-* may support NIO later
+* Use whatever serialization library you want (the core supports `Flowable<ByteBuffer>`)
+* Supports plain HTTP/HTTPS service (no firewall troubles with WebSockets)
+* Uses Servlet 3.1+ asynchronous processing (by default)
 
 ## Getting started
 

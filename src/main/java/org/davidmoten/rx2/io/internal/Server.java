@@ -4,17 +4,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import io.reactivex.Flowable;
 import io.reactivex.Scheduler;
 import io.reactivex.Scheduler.Worker;
-import io.reactivex.Single;
 import io.reactivex.SingleObserver;
+import io.reactivex.SingleSource;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.internal.fuseable.SimplePlainQueue;
@@ -27,7 +26,7 @@ public final class Server {
         // prevent instantiation
     }
 
-    public static void handle(Flowable<? extends ByteBuffer> flowable, Single<OutputStream> out,
+    public static void handle(Publisher<? extends ByteBuffer> flowable, SingleSource<OutputStream> out,
             Runnable done, long id, Scheduler requestScheduler,
             Consumer<Subscription> subscription) {
         // when first request read (8 bytes) subscribe to Flowable
@@ -46,7 +45,7 @@ public final class Server {
 
         private static final long serialVersionUID = 1331107616659478552L;
 
-        private final Single<OutputStream> outSource;
+        private final SingleSource<OutputStream> outSource;
         private OutputStream out;
         private final Runnable completion;
         private final long id;
@@ -59,7 +58,7 @@ public final class Server {
         private volatile boolean cancelled;
         private Disposable disposable;
 
-        HandlerSubscriber(Single<OutputStream> outSource, Runnable completion, long id,
+        HandlerSubscriber(SingleSource<OutputStream> outSource, Runnable completion, long id,
                 Scheduler requestScheduler) {
             this.outSource = outSource;
             this.completion = completion;
