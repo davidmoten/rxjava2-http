@@ -69,7 +69,18 @@ public class ClientTest {
 
     @Test
     public void testRequestReturnsNon200ResponseCodeShouldEmitError() throws Exception {
-
+     //TODO   
+    }
+    
+    @Test
+    public void testRequestOfUnknownStreamIdShouldEmitError() throws Exception {
+        Server server = createServerAsync(SOURCE);
+        try {
+            //TODO
+        } finally {
+            // Stop Server
+            server.stop();
+        }
     }
 
     @Test
