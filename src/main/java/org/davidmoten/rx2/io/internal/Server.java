@@ -35,7 +35,7 @@ public final class Server {
         try {
             subscription.accept(subscriber);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("subscription consumer threw", e);
         }
         flowable.subscribe(subscriber);
     }
@@ -51,7 +51,6 @@ public final class Server {
         private final long id;
         private final Worker worker;
         private Subscription parent;
-        private boolean done;
         private SimplePlainQueue<ByteBuffer> queue = new SpscLinkedArrayQueue<>(16);
         private volatile boolean finished;
         private Throwable error;
@@ -123,11 +122,6 @@ public final class Server {
 
         @Override
         public void onError(Throwable e) {
-            if (done) {
-                RxJavaPlugins.onError(e);
-                return;
-            }
-            done = true;
             error = e;
             finished = true;
             drain();
@@ -135,10 +129,6 @@ public final class Server {
 
         @Override
         public void onComplete() {
-            if (done) {
-                return;
-            }
-            done = true;
             finished = true;
             drain();
         }

@@ -31,8 +31,8 @@ import io.reactivex.subscribers.TestSubscriber;
 
 public class ClientTest {
 
-    private static final Flowable<ByteBuffer> SOURCE = Flowable.just(
-            ByteBuffer.wrap(new byte[] { 1, 2, 3 }), ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
+    private static final Flowable<ByteBuffer> SOURCE = Flowable.just(ByteBuffer.wrap(new byte[] { 1, 2, 3 }),
+            ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
 
     @Test
     public void isUtilityClass() {
@@ -48,8 +48,7 @@ public class ClientTest {
     public void testGetWithClient() throws Exception {
         Server server = createServerAsync(SOURCE);
         try {
-            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/")
-                    .openConnection();
+            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/").openConnection();
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             BiConsumer<Long, Long> requester = createRequester();
@@ -175,10 +174,11 @@ public class ClientTest {
             server.stop();
         }
     }
-    
+
     @Test
     public void testRangeAsync() throws Exception {
-        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize).observeOn(Schedulers.io());
+        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize)
+                .observeOn(Schedulers.io());
         Server server = createServerAsync(flowable);
         try {
             Client.get("http://localhost:8080/") //
@@ -254,7 +254,7 @@ public class ClientTest {
             server.stop();
         }
     }
-    
+
     @Test
     public void testRangeParallelSync() throws Exception {
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
@@ -313,13 +313,29 @@ public class ClientTest {
     }
 
     @Test
+    public void testFlowableFactoryThrows() throws Exception {
+        Server server = createServerFlowableFactoryThrows();
+        try {
+            Client.get("http://localhost:8080/") //
+                    .build() //
+                    .reduce(0, (x, bb) -> x + bb.remaining()) //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertNoValues() //
+                    .assertError(e -> e.getMessage().startsWith("java.io.IOException: boo"));
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
     public void testSimpleGet() throws Exception {
         Server server = createServerAsync(SOURCE);
         try {
             // Start Server
             server.start();
-            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100")
-                    .openConnection();
+            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100").openConnection();
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             InputStream in = con.getInputStream();
@@ -362,7 +378,24 @@ public class ClientTest {
         }
         return server;
     }
-    
+
+    private static Server createServerFlowableFactoryThrows() {
+        // Create Server
+        Server server = new Server(8080);
+        ServletContextHandler context = new ServletContextHandler();
+        ServletHolder defaultServ = new ServletHolder("default", HandlerServletFactoryThrows.class);
+        defaultServ.setInitParameter("resourceBase", System.getProperty("user.dir"));
+        defaultServ.setInitParameter("dirAllowed", "true");
+        context.addServlet(defaultServ, "/");
+        server.setHandler(context);
+        try {
+            server.start();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return server;
+    }
+
     private static Server createServerSync(Flowable<ByteBuffer> flowable) {
         // Create Server
         Server server = new Server(8080);
@@ -386,8 +419,8 @@ public class ClientTest {
 
             @Override
             public void accept(Long id, Long request) throws Exception {
-                HttpURLConnection con = (HttpURLConnection) new URL(
-                        "http://localhost:8080/?id=" + id + "&r=" + request).openConnection();
+                HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?id=" + id + "&r=" + request)
+                        .openConnection();
                 con.setRequestMethod("GET");
                 con.setUseCaches(false);
                 assertEquals(HttpStatus.OK_200, con.getResponseCode());

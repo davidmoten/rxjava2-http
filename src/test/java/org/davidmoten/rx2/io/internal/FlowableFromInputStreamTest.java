@@ -5,8 +5,6 @@ import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import org.junit.Test;
 
@@ -80,7 +78,7 @@ public class FlowableFromInputStreamTest {
             @Override
             public int read() throws IOException {
                 count++;
-                if (count > 12) {
+                if (count > bytes.length) {
                     throw new IOException("always throw");
                 } else {
                     return bytes[count - 1];
@@ -105,7 +103,7 @@ public class FlowableFromInputStreamTest {
             @Override
             public int read() throws IOException {
                 count++;
-                if (count > 12) {
+                if (count > bytes.length) {
                     return -1;
                 } else {
                     return bytes[count - 1];
