@@ -1,6 +1,5 @@
 package org.davidmoten.rx2.io.internal;
 
-import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,8 +10,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
-import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 
 import io.reactivex.Flowable;
 import io.reactivex.exceptions.Exceptions;
@@ -182,5 +179,5 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         }
 
     }
-    
+
 }

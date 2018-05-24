@@ -51,5 +51,5 @@ public final class DefaultSerializer<T extends Serializable> implements Serializ
             throw new RuntimeException(e);
         }
     }
-    
+
 }

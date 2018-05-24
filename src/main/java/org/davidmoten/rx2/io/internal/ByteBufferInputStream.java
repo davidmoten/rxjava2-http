@@ -12,6 +12,7 @@ public final class ByteBufferInputStream extends InputStream {
         this.bb = bb;
     }
 
+    @Override
     public int read() throws IOException {
         if (!bb.hasRemaining()) {
             return -1;
@@ -19,6 +20,7 @@ public final class ByteBufferInputStream extends InputStream {
         return bb.get() & 0xFF;
     }
 
+    @Override
     public int read(byte[] bytes, int offset, int length) throws IOException {
         if (length == 0) {
             return 0;
@@ -31,6 +33,7 @@ public final class ByteBufferInputStream extends InputStream {
         return n;
     }
 
+    @Override
     public int available() throws IOException {
         return bb.remaining();
     }
