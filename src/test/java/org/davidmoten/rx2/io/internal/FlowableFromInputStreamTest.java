@@ -117,31 +117,4 @@ public class FlowableFromInputStreamTest {
                 .assertError(EOFException.class);
     }
 
-    @Test
-    public void testCloseNullDoesNotThrow() {
-        FlowableFromInputStream.close(null);
-    }
-
-    @Test
-    public void testCloseThrowingDoesNotThrow() {
-        FlowableFromInputStream.close(new Closeable() {
-
-            @Override
-            public void close() throws IOException {
-                throw new IOException();
-            }
-        });
-    }
-
-    @Test
-    public void testCloseNotThrowing() {
-        FlowableFromInputStream.close(new Closeable() {
-
-            @Override
-            public void close() throws IOException {
-                // do nothing
-            }
-        });
-    }
-
 }

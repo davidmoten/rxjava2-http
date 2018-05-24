@@ -164,7 +164,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         }
 
         private void closeStreamSilently() {
-            close(in);
+            Util.close(in);
         }
 
         @Override
@@ -182,16 +182,5 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         }
 
     }
-
     
-    @VisibleForTesting
-    static void close(Closeable c) {
-        if (c != null) {
-            try {
-                c.close();
-            } catch (IOException e) {
-                RxJavaPlugins.onError(e);
-            }
-        }
-    }
 }
