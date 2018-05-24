@@ -13,6 +13,8 @@ Status: *pre-alpha* (in development)
 * Supports plain HTTP/HTTPS service (no firewall troubles with WebSockets)
 * Uses Servlet 3.1+ asynchronous processing (by default)
 
+<img src="src/docs/marble-diagram.png?raw=true" />
+
 ## Getting started
 
 ### Maven dependency
