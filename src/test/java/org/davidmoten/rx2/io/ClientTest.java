@@ -44,7 +44,7 @@ public class ClientTest {
         Client.get("url").build();
     }
 
-    // @Test
+    @Test
     public void testGetWithClient() throws Exception {
         Server server = createServerAsync(SOURCE);
         try {
@@ -61,6 +61,45 @@ public class ClientTest {
                     .assertValue(3 + 4) //
                     .assertComplete();
             assertEquals(HttpStatus.OK_200, con.getResponseCode());
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testRequestReturnsNon200ResponseCodeShouldEmitError() throws Exception {
+
+    }
+
+    @Test
+    public void testStreamWithEmptyByteBuffer() throws Exception {
+        Server server = createServerAsync(Flowable.just(ByteBuffer.wrap(new byte[] {})));
+        try {
+            Client.get("http://localhost:8080/") //
+                    .build() //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertValueCount(1) //
+                    .assertValue(bb -> bb.remaining() == 0) //
+                    .assertComplete();
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testStreamWithEmptyByteBufferThenMore() throws Exception {
+        Server server = createServerAsync(
+                Flowable.just(ByteBuffer.wrap(new byte[] {}), ByteBuffer.wrap(new byte[] { 1, 2 })));
+        try {
+            Client.get("http://localhost:8080/") //
+                    .build() //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertValueCount(2) //
+                    .assertComplete();
         } finally {
             // Stop Server
             server.stop();

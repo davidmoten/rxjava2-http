@@ -93,7 +93,7 @@ public final class Client {
                 con.setUseCaches(false);
                 int code = con.getResponseCode();
                 if (code != 200) {
-                    RxJavaPlugins.onError(new IOException("response code from request call was not 200: " + code));
+                    throw new IOException("response code from request call was not 200: " + code);
                 }
             } catch (Throwable e) {
                 RxJavaPlugins.onError(e);
