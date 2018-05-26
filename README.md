@@ -126,16 +126,16 @@ Complete ::= NegativeMinLength
 ```
 
 ### Stream
-<img src="https://raw.githubusercontent.com/davidmoten/rxjava2-http/master/src/doc/Stream.png"/><br/>
+<img src="src/docs/Stream.png?raw=true"/><br/>
 
 ### Item
-<img src="https://raw.githubusercontent.com/davidmoten/rxjava2-http/master/src/doc/Item.png"/><br/>
+<img src="src/docs/Item.png?raw=true"/><br/>
 
 ### Complete
-<img src="https://raw.githubusercontent.com/davidmoten/rxjava2-http/master/src/doc/Complete.png"/><br/>
+<img src="src/docs/Complete.png?raw=true"/><br/>
 
 ### Error
-<img src="https://raw.githubusercontent.com/davidmoten/rxjava2-http/master/src/doc/Error.png"/><br/>
+<img src="src/docs/Error.png?raw=true"/><br/>
 
 
 The core of the library is support for publishing a `Flowable<ByteBuffer>` over HTTP. Serialization is a little optional extra that occurs at both ends.
