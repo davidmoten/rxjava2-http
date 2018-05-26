@@ -68,7 +68,7 @@ Flowable<Integer> numbers =
 
 `Serializer.javaIo()` can be used to serialize classes that implement `Serializable`. It is much slower than products like *Kryo* or indeed if you have the time, custom serialization.
 
-### Good practices
+## Good practices
 
 ### Backpressure
 To ensure backpressure is applied over the network (so operating system IO buffers don't fill and block threads) it's a good idea to request data in batches:
