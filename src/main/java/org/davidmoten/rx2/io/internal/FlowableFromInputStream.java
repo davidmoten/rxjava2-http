@@ -31,17 +31,17 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
     @Override
     protected void subscribeActual(Subscriber<? super ByteBuffer> subscriber) {
-        FromStreamSubscriber subscription = new FromStreamSubscriber(in, requester, subscriber);
+        FromStreamSubscription subscription = new FromStreamSubscription(in, requester, subscriber);
         subscription.start();
     }
 
-    private static final class FromStreamSubscriber extends AtomicInteger implements Subscription {
+    private static final class FromStreamSubscription extends AtomicInteger implements Subscription {
 
         private static final long serialVersionUID = 5917186677331992560L;
 
         private final InputStream in;
         private final Subscriber<? super ByteBuffer> child;
-        private final AtomicLong requested = new AtomicLong();
+        private final AtomicLong requested;
         private long id;
 
         private volatile boolean cancelled;
@@ -51,10 +51,11 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         private byte[] buffer;
         private int bufferIndex;
 
-        FromStreamSubscriber(InputStream in, BiConsumer<Long, Long> requester, Subscriber<? super ByteBuffer> child) {
+        FromStreamSubscription(InputStream in, BiConsumer<Long, Long> requester, Subscriber<? super ByteBuffer> child) {
             this.in = in;
             this.requester = requester;
             this.child = child;
+            this.requested = new AtomicLong();
         }
 
         public void start() {

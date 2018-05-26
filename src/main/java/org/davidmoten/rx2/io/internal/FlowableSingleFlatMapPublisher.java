@@ -8,6 +8,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import io.reactivex.Flowable;
+import io.reactivex.FlowableSubscriber;
 import io.reactivex.SingleObserver;
 import io.reactivex.SingleSource;
 import io.reactivex.disposables.Disposable;
@@ -32,19 +33,20 @@ public final class FlowableSingleFlatMapPublisher<S, T> extends Flowable<T> {
     }
 
     static final class SingleFlatMapPublisherObserver<S, T> extends AtomicLong
-            implements SingleObserver<S>, Subscriber<T>, Subscription {
+            implements SingleObserver<S>, FlowableSubscriber<T>, Subscription {
 
         private static final long serialVersionUID = 7759721921468635667L;
 
         private final Subscriber<? super T> child;
         private final Function<? super S, ? extends Publisher<? extends T>> mapper;
         private Disposable disposable;
-        private final AtomicReference<Subscription> parent = new AtomicReference<>();
+        private final AtomicReference<Subscription> parent;
 
         SingleFlatMapPublisherObserver(Subscriber<? super T> child,
                 Function<? super S, ? extends Publisher<? extends T>> mapper) {
             this.child = child;
             this.mapper = mapper;
+            this.parent = new AtomicReference<>();
         }
 
         @Override

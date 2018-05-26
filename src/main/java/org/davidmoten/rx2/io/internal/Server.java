@@ -7,9 +7,9 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import io.reactivex.FlowableSubscriber;
 import io.reactivex.Scheduler;
 import io.reactivex.Scheduler.Worker;
 import io.reactivex.SingleObserver;
@@ -40,7 +40,7 @@ public final class Server {
     }
 
     private static final class HandlerSubscriber extends AtomicInteger
-            implements Subscriber<ByteBuffer>, Subscription, SingleObserver<OutputStream> {
+            implements FlowableSubscriber<ByteBuffer>, Subscription, SingleObserver<OutputStream> {
 
         private static final long serialVersionUID = 1331107616659478552L;
 
@@ -50,7 +50,7 @@ public final class Server {
         private final long id;
         private final Worker worker;
         private Subscription parent;
-        private SimplePlainQueue<ByteBuffer> queue = new SpscLinkedArrayQueue<>(16);
+        private SimplePlainQueue<ByteBuffer> queue;
         private volatile boolean finished;
         private Throwable error;
         private volatile boolean cancelled;
@@ -62,6 +62,7 @@ public final class Server {
             this.completion = completion;
             this.id = id;
             this.worker = requestScheduler.createWorker();
+            this.queue = new SpscLinkedArrayQueue<>(16);
         }
 
         @Override
