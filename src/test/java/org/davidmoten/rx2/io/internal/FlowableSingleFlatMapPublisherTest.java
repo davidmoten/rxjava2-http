@@ -19,11 +19,24 @@ public class FlowableSingleFlatMapPublisherTest {
 
     @Test
     public void testDeferred() {
-        new FlowableSingleFlatMapPublisher<>(Single.timer(500, TimeUnit.MILLISECONDS), n -> Flowable.just(1, 2)) //
+        new FlowableSingleFlatMapPublisher<>(Single.timer(500, TimeUnit.MILLISECONDS),
+                n -> Flowable.just(1, 2)) //
+                        .test() //
+                        .awaitDone(2, TimeUnit.SECONDS) //
+                        .assertValues(1, 2) //
+                        .assertComplete();
+    }
+
+    @Test
+    public void testMapperThrows() {
+        RuntimeException ex = new RuntimeException();
+        new FlowableSingleFlatMapPublisher<>(Single.timer(500, TimeUnit.MILLISECONDS), n -> {
+            throw ex;
+        }) //
                 .test() //
                 .awaitDone(2, TimeUnit.SECONDS) //
-                .assertValues(1, 2) //
-                .assertComplete();
+                .assertNoValues() //
+                .assertError(ex);
     }
 
 }
