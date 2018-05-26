@@ -4,8 +4,11 @@ import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 import org.junit.Test;
+
+import io.reactivex.subscribers.TestSubscriber;
 
 public class FlowableFromInputStreamTest {
 
@@ -29,6 +32,24 @@ public class FlowableFromInputStreamTest {
                 .test(1) //
                 .assertValueCount(1) //
                 .assertErrorMessage("boo");
+    }
+
+    @Test
+    public void testRequesterFailsOnCancel() {
+        ByteArrayInputStream in = new ByteArrayInputStream(new byte[] { 0, 0, 0, 0, 0, 0, 0, 2, 0,
+                0, 0, 1, 12, 0, 0, 0, 1, 13, -128, 0, 0, 0 });
+        TestSubscriber<ByteBuffer> ts = new FlowableFromInputStream(in, (id, r) -> {
+            if (r == -1) {
+                throw new RuntimeException("will appear in RxJavaPlugins onError output");
+            }
+        }) //
+                .test(1) //
+                .assertValueCount(1);
+        ts.cancel();
+        ts.assertValueCount(1) //
+          .requestMore(100) //
+          .assertValueCount(1) //
+          .assertNotTerminated();
     }
 
     @Test
