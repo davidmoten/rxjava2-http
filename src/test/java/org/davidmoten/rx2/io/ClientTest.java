@@ -211,11 +211,11 @@ public class ClientTest {
 
     @Test
     public void testRange() throws Exception {
-        for (int i = 0; i < 1000; i++) {
-            Flowable<ByteBuffer> flowable = Flowable.range(1, 1000)
-                    .map(Serializer.javaIo()::serialize);
-            Server server = createServerAsync(flowable);
-            try {
+        Runtime r = Runtime.getRuntime();
+        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
+        Server server = createServerAsync(flowable);
+        try {
+            for (int i = 0; i < 1000; i++) {
                 get(server) //
                         .<Integer>deserialized() //
                         .doOnRequest(System.out::println) //
@@ -225,10 +225,13 @@ public class ClientTest {
                         .awaitDone(10, TimeUnit.SECONDS) //
                         .assertValues(501, 502, 503, 504) //
                         .assertComplete();
-            } finally {
-                // Stop Server
-                server.stop();
+
+                System.out.println(i + ": " + r.maxMemory() / 1024 / 1024 + ", "
+                        + r.freeMemory() / (1024 * 1024) + "MB");
             }
+        } finally {
+            // Stop Server
+            server.stop();
         }
     }
 
