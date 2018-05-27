@@ -26,8 +26,9 @@ public final class Server {
         // prevent instantiation
     }
 
-    public static void handle(Publisher<? extends ByteBuffer> flowable, SingleSource<OutputStream> out, Runnable done,
-            long id, Scheduler requestScheduler, Consumer<Subscription> subscription) {
+    public static void handle(Publisher<? extends ByteBuffer> flowable,
+            SingleSource<OutputStream> out, Runnable done, long id, Scheduler requestScheduler,
+            Consumer<Subscription> subscription) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
         HandlerSubscriber subscriber = new HandlerSubscriber(out, done, id, requestScheduler);
@@ -101,15 +102,10 @@ public final class Server {
 
         @Override
         public void cancel() {
-            try {
-                cancelled = true;
-                disposable.dispose();
-                parent.cancel();
-                worker.dispose();
-            } finally {
-                Util.close(out);
-            }
-            completion.run();
+            cancelled = true;
+            disposable.dispose();
+            parent.cancel();
+            worker.dispose();
         }
 
         // end of SingleObserver
@@ -194,8 +190,6 @@ public final class Server {
                 out.flush();
             } catch (IOException e) {
                 RxJavaPlugins.onError(e);
-            } finally {
-                Util.close(out);
             }
         }
 
@@ -212,8 +206,6 @@ public final class Server {
                 out.flush();
             } catch (IOException e) {
                 RxJavaPlugins.onError(e);
-            } finally {
-                Util.close(out);
             }
         }
 
