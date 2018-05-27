@@ -107,6 +107,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                                 return;
                             }
                             if (length == Integer.MIN_VALUE) {
+                                System.out.println("complete");
                                 closeStreamSilently();
                                 child.onComplete();
                                 return;
