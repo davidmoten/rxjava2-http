@@ -211,21 +211,24 @@ public class ClientTest {
 
     @Test
     public void testRange() throws Exception {
-        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
-        Server server = createServerAsync(flowable);
-        try {
-            get(server) //
-                    .<Integer>deserialized() //
-                    .doOnRequest(System.out::println) //
-                    .skip(500) //
-                    .take(4) //
-                    .test() //
-                    .awaitDone(10, TimeUnit.SECONDS) //
-                    .assertValues(501, 502, 503, 504) //
-                    .assertComplete();
-        } finally {
-            // Stop Server
-            server.stop();
+        for (int i = 0; i < 1000; i++) {
+            Flowable<ByteBuffer> flowable = Flowable.range(1, 1000)
+                    .map(Serializer.javaIo()::serialize);
+            Server server = createServerAsync(flowable);
+            try {
+                get(server) //
+                        .<Integer>deserialized() //
+                        .doOnRequest(System.out::println) //
+                        .skip(500) //
+                        .take(4) //
+                        .test() //
+                        .awaitDone(10, TimeUnit.SECONDS) //
+                        .assertValues(501, 502, 503, 504) //
+                        .assertComplete();
+            } finally {
+                // Stop Server
+                server.stop();
+            }
         }
     }
 
@@ -482,7 +485,8 @@ public class ClientTest {
             @Override
             public void accept(Long id, Long request) throws Exception {
                 HttpURLConnection con = (HttpURLConnection) new URL(
-                        "http://localhost:" + port + "/?id=" + id + "&r=" + request).openConnection();
+                        "http://localhost:" + port + "/?id=" + id + "&r=" + request)
+                                .openConnection();
                 con.setRequestMethod("GET");
                 con.setUseCaches(false);
                 assertEquals(HttpStatus.OK_200, con.getResponseCode());
