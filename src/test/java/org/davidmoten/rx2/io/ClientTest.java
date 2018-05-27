@@ -396,8 +396,8 @@ public class ClientTest {
         try {
             // Start Server
             server.start();
-            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100")
-                    .openConnection();
+            HttpURLConnection con = (HttpURLConnection) new URL(
+                    "http://localhost:" + port(server) + "/?r=100").openConnection();
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             InputStream in = con.getInputStream();
@@ -482,7 +482,7 @@ public class ClientTest {
             @Override
             public void accept(Long id, Long request) throws Exception {
                 HttpURLConnection con = (HttpURLConnection) new URL(
-                        "http://localhost:8080/?id=" + id + "&r=" + request).openConnection();
+                        "http://localhost:" + port + "/?id=" + id + "&r=" + request).openConnection();
                 con.setRequestMethod("GET");
                 con.setUseCaches(false);
                 assertEquals(HttpStatus.OK_200, con.getResponseCode());
