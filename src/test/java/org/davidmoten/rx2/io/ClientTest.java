@@ -14,9 +14,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.davidmoten.rx2.io.Client.Builder;
 import org.davidmoten.rx2.io.Client.Requester;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
@@ -31,8 +33,8 @@ import io.reactivex.subscribers.TestSubscriber;
 
 public class ClientTest {
 
-    private static final Flowable<ByteBuffer> SOURCE = Flowable.just(ByteBuffer.wrap(new byte[] { 1, 2, 3 }),
-            ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
+    private static final Flowable<ByteBuffer> SOURCE = Flowable.just(
+            ByteBuffer.wrap(new byte[] { 1, 2, 3 }), ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
 
     @Test
     public void isUtilityClass() {
@@ -48,10 +50,11 @@ public class ClientTest {
     public void testGetWithClient() throws Exception {
         Server server = createServerAsync(SOURCE);
         try {
-            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/").openConnection();
+            HttpURLConnection con = (HttpURLConnection) new URL(
+                    "http://localhost:" + port(server) + "/").openConnection();
             con.setRequestMethod("GET");
             con.setUseCaches(false);
-            BiConsumer<Long, Long> requester = createRequester();
+            BiConsumer<Long, Long> requester = createRequester(port(server));
             Client.read(Single.fromCallable(() -> con.getInputStream()), requester) //
                     .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
@@ -69,14 +72,14 @@ public class ClientTest {
 
     @Test
     public void testRequestReturnsNon200ResponseCodeShouldEmitError() throws Exception {
-     //TODO   
+        // TODO
     }
-    
+
     @Test
     public void testRequestOfUnknownStreamIdShouldEmitError() throws Exception {
         Server server = createServerAsync(SOURCE);
         try {
-            //TODO
+            // TODO
         } finally {
             // Stop Server
             server.stop();
@@ -87,7 +90,7 @@ public class ClientTest {
     public void testStreamWithEmptyByteBuffer() throws Exception {
         Server server = createServerAsync(Flowable.just(ByteBuffer.wrap(new byte[] {})));
         try {
-            Client.get("http://localhost:8080/") //
+            get(server) //
                     .build() //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
@@ -102,10 +105,10 @@ public class ClientTest {
 
     @Test
     public void testStreamWithEmptyByteBufferThenMore() throws Exception {
-        Server server = createServerAsync(
-                Flowable.just(ByteBuffer.wrap(new byte[] {}), ByteBuffer.wrap(new byte[] { 1, 2 })));
+        Server server = createServerAsync(Flowable.just(ByteBuffer.wrap(new byte[] {}),
+                ByteBuffer.wrap(new byte[] { 1, 2 })));
         try {
-            Client.get("http://localhost:8080/") //
+            get(server) //
                     .build() //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
@@ -121,7 +124,7 @@ public class ClientTest {
     public void testGetEmptyStream() throws Exception {
         Server server = createServerAsync(Flowable.empty());
         try {
-            Client.get("http://localhost:8080/") //
+            get(server) //
                     .build() //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
@@ -139,7 +142,7 @@ public class ClientTest {
                 Flowable.timer(300, TimeUnit.MILLISECONDS) //
                         .map(x -> ByteBuffer.wrap(new byte[] { 1 })));
         try {
-            Client.get("http://localhost:8080/") //
+            get(server) //
                     .build() //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
@@ -156,7 +159,7 @@ public class ClientTest {
         RuntimeException ex = new RuntimeException("boo");
         Server server = createServerAsync(Flowable.error(ex));
         try {
-            Client.get("http://localhost:8080/") //
+            get(server) //
                     .build() //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
@@ -176,7 +179,7 @@ public class ClientTest {
                         .concatWith(Flowable.error(ex)) //
                         .map(Serializer.javaIo()::serialize));
         try {
-            Client.get("http://localhost:8080/") //
+            get(server) //
                     .deserialized() //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
@@ -190,9 +193,10 @@ public class ClientTest {
 
     @Test
     public void testCancel() throws Exception {
-        Server server = createServerAsync(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })).repeat());
+        Server server = createServerAsync(
+                Flowable.just(ByteBuffer.wrap(new byte[] { 1 })).repeat());
         try {
-            Client.get("http://localhost:8080/") //
+            get(server) //
                     .build() //
                     .take(20) //
                     .test() //
@@ -210,7 +214,7 @@ public class ClientTest {
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
         Server server = createServerAsync(flowable);
         try {
-            Client.get("http://localhost:8080/") //
+            get(server) //
                     .<Integer>deserialized() //
                     .doOnRequest(System.out::println) //
                     .skip(500) //
@@ -231,7 +235,7 @@ public class ClientTest {
                 .observeOn(Schedulers.io());
         Server server = createServerAsync(flowable);
         try {
-            Client.get("http://localhost:8080/") //
+            get(server) //
                     .<Integer>deserialized() //
                     .rebatchRequests(10) //
                     .doOnRequest(System.out::println) //
@@ -257,7 +261,7 @@ public class ClientTest {
                 .doOnCancel(() -> cancelled.set(true));
         Server server = createServerAsync(flowable);
         try {
-            TestSubscriber<Integer> ts = Client.get("http://localhost:8080/") // s
+            TestSubscriber<Integer> ts = get(server) // s
                     .<Integer>deserialized() //
                     .test(0);
             Thread.sleep(300);
@@ -289,7 +293,7 @@ public class ClientTest {
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
         Server server = createServerAsync(flowable);
         try {
-            Flowable<Integer> f = Client.get("http://localhost:8080/") //
+            Flowable<Integer> f = get(server) //
                     .<Integer>deserialized() //
                     .skip(500) //
                     .take(4);
@@ -310,7 +314,7 @@ public class ClientTest {
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
         Server server = createServerSync(flowable);
         try {
-            Flowable<Integer> f = Client.get("http://localhost:8080/") //
+            Flowable<Integer> f = get(server) //
                     .<Integer>deserialized() //
                     .skip(500) //
                     .take(4);
@@ -318,19 +322,26 @@ public class ClientTest {
                     .timeout(5, TimeUnit.SECONDS) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
-                    .assertValues(501, 502, 503, 504) //
-                    .assertComplete();
+                    .assertResult(501, 502, 503, 504);
         } finally {
             // Stop Server
             server.stop();
         }
     }
 
+    private static Builder get(Server server) {
+        return Client.get("http://localhost:" + port(server) + "/");
+    }
+
+    private static int port(Server server) {
+        return ((ServerConnector) server.getConnectors()[0]).getLocalPort();
+    }
+
     @Test
     public void testGetWithClient2() throws Exception {
         Server server = createServerAsync(SOURCE);
         try {
-            Client.get("http://localhost:8080/") //
+            get(server) //
                     .method(HttpMethod.GET) //
                     .build() //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
@@ -348,7 +359,7 @@ public class ClientTest {
     public void testGetWithClientHttpPost() throws Exception {
         Server server = createServerAsync(SOURCE);
         try {
-            Client.get("http://localhost:8080/") //
+            get(server) //
                     .method(HttpMethod.POST) //
                     .build() //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
@@ -366,7 +377,7 @@ public class ClientTest {
     public void testFlowableFactoryThrows() throws Exception {
         Server server = createServerFlowableFactoryThrows();
         try {
-            Client.get("http://localhost:8080/") //
+            get(server) //
                     .build() //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
@@ -385,7 +396,8 @@ public class ClientTest {
         try {
             // Start Server
             server.start();
-            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100").openConnection();
+            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?r=100")
+                    .openConnection();
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             InputStream in = con.getInputStream();
@@ -413,7 +425,7 @@ public class ClientTest {
 
     private static Server createServerAsync(Flowable<ByteBuffer> flowable) {
         // Create Server
-        Server server = new Server(8080);
+        Server server = new Server(0);
         ServletContextHandler context = new ServletContextHandler();
         ServletHolder defaultServ = new ServletHolder("default", HandlerServletAsync.class);
         defaultServ.setInitParameter("resourceBase", System.getProperty("user.dir"));
@@ -448,7 +460,7 @@ public class ClientTest {
 
     private static Server createServerSync(Flowable<ByteBuffer> flowable) {
         // Create Server
-        Server server = new Server(8080);
+        Server server = new Server(0);
         ServletContextHandler context = new ServletContextHandler();
         ServletHolder defaultServ = new ServletHolder("default", HandlerServletSync.class);
         defaultServ.setInitParameter("resourceBase", System.getProperty("user.dir"));
@@ -464,13 +476,13 @@ public class ClientTest {
         return server;
     }
 
-    private static BiConsumer<Long, Long> createRequester() {
+    private static BiConsumer<Long, Long> createRequester(int port) {
         return new BiConsumer<Long, Long>() {
 
             @Override
             public void accept(Long id, Long request) throws Exception {
-                HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:8080/?id=" + id + "&r=" + request)
-                        .openConnection();
+                HttpURLConnection con = (HttpURLConnection) new URL(
+                        "http://localhost:8080/?id=" + id + "&r=" + request).openConnection();
                 con.setRequestMethod("GET");
                 con.setUseCaches(false);
                 assertEquals(HttpStatus.OK_200, con.getResponseCode());
