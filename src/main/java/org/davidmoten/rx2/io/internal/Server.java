@@ -1,5 +1,6 @@
 package org.davidmoten.rx2.io.internal;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -7,9 +8,9 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import io.reactivex.FlowableSubscriber;
 import io.reactivex.Scheduler;
 import io.reactivex.Scheduler.Worker;
 import io.reactivex.SingleObserver;
@@ -41,7 +42,7 @@ public final class Server {
     }
 
     private static final class HandlerSubscriber extends AtomicInteger
-            implements FlowableSubscriber<ByteBuffer>, Subscription, SingleObserver<OutputStream> {
+            implements Subscriber<ByteBuffer>, Subscription, SingleObserver<OutputStream> {
 
         private static final long serialVersionUID = 1331107616659478552L;
 
@@ -205,7 +206,11 @@ public final class Server {
                 bytes.write(out);
                 out.flush();
             } catch (IOException e) {
-                RxJavaPlugins.onError(e);
+                // cancellation will close the OutputStream
+                // so we won't report that
+                if (!(e instanceof EOFException)) {
+                    RxJavaPlugins.onError(e);
+                }
             }
         }
 

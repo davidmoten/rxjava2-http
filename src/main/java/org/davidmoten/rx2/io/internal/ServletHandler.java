@@ -60,7 +60,6 @@ public final class ServletHandler {
             final long r = getRequest(req);
             resp.setContentType("application/octet-stream");
             if (processing == Processing.SYNC || !req.isAsyncSupported()) {
-                System.out.println("blocking=============");
                 handleStreamBlocking(publisher, resp.getOutputStream(), r);
             } else {
                 AsyncContext asyncContext = req.startAsync();
