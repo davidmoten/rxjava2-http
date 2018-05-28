@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.davidmoten.rx2.io.Client.Builder;
@@ -312,6 +313,24 @@ public class ClientTest {
     }
 
     @Test
+    public void testNever() throws Exception {
+        Flowable<ByteBuffer> flowable = Flowable.<ByteBuffer>never();
+        Server server = createServerSync(flowable);
+        try {
+            get(server) //
+                    .<Integer>deserialized() //
+                    .timeout(1, TimeUnit.SECONDS) //
+                    .test() //
+                    .awaitDone(2,  TimeUnit.SECONDS) //
+                    .assertNoValues() //
+                    .assertError(TimeoutException.class);
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
     public void testRangeParallelSync() throws Exception {
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
         Server server = createServerSync(flowable);
@@ -321,7 +340,7 @@ public class ClientTest {
                     .skip(500) //
                     .take(4);
             f.zipWith(f, (a, b) -> a) //
-//                    .timeout(5, TimeUnit.SECONDS, Schedulers.io()) //
+                    // .timeout(5, TimeUnit.SECONDS, Schedulers.io()) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
                     .assertResult(501, 502, 503, 504);

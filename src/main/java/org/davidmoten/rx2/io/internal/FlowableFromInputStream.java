@@ -12,12 +12,14 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import io.reactivex.Flowable;
+import io.reactivex.Scheduler.Worker;
 import io.reactivex.exceptions.Exceptions;
 import io.reactivex.functions.BiConsumer;
 import io.reactivex.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.internal.util.BackpressureHelper;
 import io.reactivex.internal.util.EmptyComponent;
 import io.reactivex.plugins.RxJavaPlugins;
+import io.reactivex.schedulers.Schedulers;
 
 public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
@@ -35,10 +37,13 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         subscription.start();
     }
 
-    private static final class FromStreamSubscription extends AtomicInteger implements Subscription {
+    private static final class FromStreamSubscription extends AtomicInteger
+            implements Subscription, Runnable {
 
         private static final long serialVersionUID = 5917186677331992560L;
 
+        private Throwable error;
+        private volatile boolean finished;
         private final InputStream in;
         private final Subscriber<? super ByteBuffer> child;
         private final AtomicLong requested;
@@ -50,24 +55,23 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         private int length = 0;
         private byte[] buffer;
         private int bufferIndex;
+        private final Worker worker;
+        private boolean reading;
+        private boolean idRead;
 
-        FromStreamSubscription(InputStream in, BiConsumer<Long, Long> requester, Subscriber<? super ByteBuffer> child) {
+        // the next emission
+        private ByteBuffer next;
+
+        FromStreamSubscription(InputStream in, BiConsumer<Long, Long> requester,
+                Subscriber<? super ByteBuffer> child) {
             this.in = in;
             this.requester = requester;
             this.child = child;
             this.requested = new AtomicLong();
+            this.worker = Schedulers.io().createWorker();
         }
 
         public void start() {
-            try {
-                id = Util.readLong(in);
-            } catch (Throwable e) {
-                Exceptions.throwIfFatal(e);
-                closeStreamSilently();
-                child.onSubscribe(EmptyComponent.INSTANCE);
-                child.onError(e);
-                return;
-            }
             child.onSubscribe(this);
             drain();
         }
@@ -88,54 +92,113 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
             }
         }
 
+        @Override
+        public void run() {
+            if (!idRead) {
+                try {
+                    id = Util.readLong(in);
+                    System.out.println("read id");
+                } catch (Throwable e) {
+                    Exceptions.throwIfFatal(e);
+                    closeStreamSilently();
+                    child.onSubscribe(EmptyComponent.INSTANCE);
+                    child.onError(e);
+                    return;
+                }
+                idRead = true;
+            }
+            if (buffer == null) {
+                try {
+                    System.out.println("reading item length");
+                    length = Util.readInt(in);
+                    System.out.println("read item length " + length);
+                } catch (IOException ex) {
+                    error = ex;
+                    finished = true;
+                    drain();
+                    return;
+                }
+                if (length == Integer.MIN_VALUE) {
+                    System.out.println("complete");
+                    closeStreamSilently();
+                    finished = true;
+                    drain();
+                    return;
+                }
+                buffer = new byte[Math.abs(length)];
+                bufferIndex = 0;
+            }
+            try {
+                int count = in.read(buffer, bufferIndex, Math.abs(length) - bufferIndex);
+                if (count == -1) {
+                    error = new EOFException("encountered EOF before expected length was read");
+                    finished = true;
+                    drain();
+                    return;
+                }
+                bufferIndex += count;
+                if (bufferIndex == Math.abs(length)) {
+                    if (length < 0) {
+                        String t = new String(buffer, 0, -length, StandardCharsets.UTF_8);
+                        buffer = null;
+                        error = new RuntimeException(t);
+                        finished = true;
+                        drain();
+                        return;
+                    } else {
+                        next = ByteBuffer.wrap(buffer, 0, length);
+                        buffer = null;
+                        reading = false;
+                        drain();
+                        return;
+                    }
+                }
+            } catch (Throwable ex) {
+                error = ex;
+                finished = true;
+                drain();
+                return;
+            }
+        }
+
         private void drain() {
             if (getAndIncrement() == 0) {
                 int missed = 1;
                 while (true) {
+                    if (tryCancelled()) {
+                        return;
+                    }
                     long r = requested.get();
                     long e = emitted;
                     while (e != r) {
-                        if (tryCancelled()) {
-                            return;
-                        }
-                        // read some more
-                        if (buffer == null) {
-                            try {
-                                length = Util.readInt(in);
-                            } catch (IOException e1) {
-                                emitError(e1);
-                                return;
-                            }
-                            if (length == Integer.MIN_VALUE) {
-                                System.out.println("complete");
-                                closeStreamSilently();
-                                child.onComplete();
-                                return;
-                            }
-                            buffer = new byte[Math.abs(length)];
-                            bufferIndex = 0;
-                        }
-                        try {
-                            int count = in.read(buffer, bufferIndex, Math.abs(length) - bufferIndex);
-                            if (count == -1) {
-                                emitError(new EOFException("encountered EOF before expected length was read"));
-                                return;
-                            }
-                            bufferIndex += count;
-                            if (bufferIndex == Math.abs(length)) {
-                                if (length < 0) {
-                                    String t = new String(buffer, 0, -length, StandardCharsets.UTF_8);
-                                    buffer = null;
-                                    child.onError(new RuntimeException(t));
-                                    return;
+                        if (!reading) {
+                            boolean d = finished;
+                            ByteBuffer bb = next;
+                            if (bb != null) {
+                                next = null;
+                                child.onNext(bb);
+                                e++;
+                            } else {
+                                if (d) {
+                                    Throwable err = error;
+                                    if (err != null) {
+                                        closeStreamSilently();
+                                        child.onError(err);
+                                        return;
+                                    } else {
+                                        closeStreamSilently();
+                                        child.onComplete();
+                                        return;
+                                    }
                                 } else {
-                                    child.onNext(ByteBuffer.wrap(buffer, 0, length));
-                                    buffer = null;
-                                    e++;
+                                    reading = true;
+                                    worker.schedule(this);
                                 }
                             }
-                        } catch (Throwable ex) {
-                            emitError(ex);
+                        } else {
+                            break;
+                        }
+                        if (tryCancelled()) {
                             return;
                         }
                     }
@@ -169,14 +232,16 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         @Override
         public void cancel() {
             cancelled = true;
+            worker.dispose();
             try {
                 // a negative request cancels the stream
                 requester.accept(id, -1L);
             } catch (Exception e) {
                 Exceptions.throwIfFatal(e);
-                closeStreamSilently();
                 RxJavaPlugins.onError(e);
                 return;
+            } finally {
+                closeStreamSilently();
             }
         }
 
