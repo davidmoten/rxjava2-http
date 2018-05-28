@@ -172,6 +172,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                         long r = requested.get();
                         long e = emitted;
                         while (e != r) {
+                            System.out.println("in loop");
                             boolean d = finished;
                             ByteBuffer bb = next;
                             if (bb != null) {
@@ -193,6 +194,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                                 } else {
                                     reading = true;
                                     worker.schedule(this);
+                                    break;
                                 }
                             }
                             if (tryCancelled()) {
