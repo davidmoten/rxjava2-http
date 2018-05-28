@@ -168,10 +168,10 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                     if (tryCancelled()) {
                         return;
                     }
-                    long r = requested.get();
-                    long e = emitted;
-                    while (e != r) {
-                        if (!reading) {
+                    if (!reading) {
+                        long r = requested.get();
+                        long e = emitted;
+                        while (e != r) {
                             boolean d = finished;
                             ByteBuffer bb = next;
                             if (bb != null) {
@@ -195,25 +195,18 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                                     worker.schedule(this);
                                 }
                             }
-                        } else {
-                            break;
+                            if (tryCancelled()) {
+                                return;
+                            }
                         }
-                        if (tryCancelled()) {
-                            return;
-                        }
+                        emitted = e;
                     }
-                    emitted = e;
                     missed = addAndGet(-missed);
                     if (missed == 0) {
                         return;
                     }
                 }
             }
-        }
-
-        private void emitError(Throwable e) {
-            closeStreamSilently();
-            child.onError(e);
         }
 
         private boolean tryCancelled() {

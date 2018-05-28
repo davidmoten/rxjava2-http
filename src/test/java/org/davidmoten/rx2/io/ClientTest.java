@@ -313,6 +313,23 @@ public class ClientTest {
     }
 
     @Test
+    public void testJust() throws Exception {
+        Flowable<ByteBuffer> flowable = //
+                Flowable.just(12).map(Serializer.javaIo()::serialize);
+        Server server = createServerSync(flowable);
+        try {
+            get(server) //
+                    .<Integer>deserialized() //
+                    .test() //
+                    .awaitDone(2, TimeUnit.SECONDS) //
+                    .assertResult(12);
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
     public void testNever() throws Exception {
         Flowable<ByteBuffer> flowable = Flowable.<ByteBuffer>never();
         Server server = createServerSync(flowable);
@@ -321,7 +338,7 @@ public class ClientTest {
                     .<Integer>deserialized() //
                     .timeout(1, TimeUnit.SECONDS) //
                     .test() //
-                    .awaitDone(2,  TimeUnit.SECONDS) //
+                    .awaitDone(2, TimeUnit.SECONDS) //
                     .assertNoValues() //
                     .assertError(TimeoutException.class);
         } finally {
