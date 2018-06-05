@@ -6,7 +6,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -15,7 +15,6 @@ import io.reactivex.Flowable;
 import io.reactivex.exceptions.Exceptions;
 import io.reactivex.functions.BiConsumer;
 import io.reactivex.internal.subscriptions.SubscriptionHelper;
-import io.reactivex.internal.util.BackpressureHelper;
 import io.reactivex.internal.util.EmptyComponent;
 import io.reactivex.plugins.RxJavaPlugins;
 
@@ -39,26 +38,38 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
         private static final long serialVersionUID = 5917186677331992560L;
 
+        private static final long ID_UNKNOWN = 0;
+
         private final InputStream in;
         private final Subscriber<? super ByteBuffer> child;
-        private final AtomicLong requested;
-        private long id;
+        private final AtomicReference<IdRequested> requested;
 
         private volatile boolean cancelled;
         private final BiConsumer<Long, Long> requester;
-        private long emitted;
         private int length = 0;
         private byte[] buffer;
         private int bufferIndex;
+
+        private static final class IdRequested {
+            final long id;
+            final long requested;
+
+            IdRequested(long id, long requested) {
+                this.id = id;
+                this.requested = requested;
+            }
+        }
 
         FromStreamSubscription(InputStream in, BiConsumer<Long, Long> requester, Subscriber<? super ByteBuffer> child) {
             this.in = in;
             this.requester = requester;
             this.child = child;
-            this.requested = new AtomicLong();
+            this.requested = new AtomicReference<>(new IdRequested(0, 0));
         }
 
         public void start() {
+            child.onSubscribe(this);
+            long id;
             try {
                 id = Util.readLong(in);
             } catch (Throwable e) {
@@ -68,21 +79,49 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                 child.onError(e);
                 return;
             }
-            child.onSubscribe(this);
+            while (true) {
+                IdRequested idr = requested.get();
+                if (requested.compareAndSet(idr, new IdRequested(id, idr.requested))) {
+                    try {
+                        requester.accept(id, idr.requested);
+                    } catch (Exception e) {
+                        Exceptions.throwIfFatal(e);
+                        closeStreamSilently();
+                        child.onError(e);
+                        return;
+                    }
+                    break;
+                }
+            }
             drain();
         }
 
         @Override
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
-                BackpressureHelper.add(requested, n);
-                try {
-                    requester.accept(id, n);
-                } catch (Exception e) {
-                    Exceptions.throwIfFatal(e);
-                    closeStreamSilently();
-                    child.onError(e);
-                    return;
+                while (true) {
+                    IdRequested idr = requested.get();
+                    if (idr.requested == Long.MAX_VALUE) {
+                        break;
+                    }
+                    long r2 = idr.requested + n;
+                    if (r2 < 0) {
+                        r2 = Long.MAX_VALUE;
+                    }
+                    if (requested.compareAndSet(idr, new IdRequested(idr.id, r2))) {
+                        if (idr.id != ID_UNKNOWN) {
+                            try {
+                                requester.accept(idr.id, idr.requested);
+                            } catch (Exception e) {
+                                Exceptions.throwIfFatal(e);
+                                closeStreamSilently();
+                                // TODO use finished and error fields
+                                child.onError(e);
+                                return;
+                            }
+                            break;
+                        }
+                    }
                 }
                 drain();
             }
@@ -92,8 +131,9 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
             if (getAndIncrement() == 0) {
                 int missed = 1;
                 while (true) {
-                    long r = requested.get();
-                    long e = emitted;
+                    IdRequested idr = requested.get();
+                    long r = idr.requested;
+                    long e = 0;
                     while (e != r) {
                         if (tryCancelled()) {
                             return;
@@ -139,7 +179,19 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                             return;
                         }
                     }
-                    emitted = e;
+                    if (e != 0) {
+                        while (true) {
+                            idr = requested.get();
+                            long r2 = idr.requested - e;
+                            if (r2 < 0L) {
+                                RxJavaPlugins.onError(new IllegalStateException("More produced than requested: " + r2));
+                                r2 = 0;
+                            }
+                            if (requested.compareAndSet(idr, new IdRequested(idr.id, r2))) {
+                                break;
+                            }
+                        }
+                    }
                     missed = addAndGet(-missed);
                     if (missed == 0) {
                         return;
@@ -169,14 +221,17 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         @Override
         public void cancel() {
             cancelled = true;
-            try {
-                // a negative request cancels the stream
-                requester.accept(id, -1L);
-            } catch (Exception e) {
-                Exceptions.throwIfFatal(e);
-                closeStreamSilently();
-                RxJavaPlugins.onError(e);
-                return;
+            IdRequested idr = requested.get();
+            if (idr.id != ID_UNKNOWN) {
+                try {
+                    // a negative request cancels the stream
+                    requester.accept(idr.id, -1L);
+                } catch (Exception e) {
+                    Exceptions.throwIfFatal(e);
+                    closeStreamSilently();
+                    RxJavaPlugins.onError(e);
+                    return;
+                }
             }
         }
 
