@@ -44,7 +44,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         private final Subscriber<? super ByteBuffer> child;
         private final AtomicReference<IdRequested> requested;
 
-        private volatile boolean cancelled;
         private final BiConsumer<Long, Long> requester;
         private int length = 0;
         private byte[] buffer;
@@ -81,6 +80,10 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
             }
             while (true) {
                 IdRequested idr = requested.get();
+                if (idr == null) {
+                    cancelUpstream(id);
+                    break;
+                }
                 if (requested.compareAndSet(idr, new IdRequested(id, idr.requested))) {
                     try {
                         requester.accept(id, idr.requested);
@@ -206,12 +209,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         }
 
         private boolean tryCancelled() {
-            if (cancelled) {
-                closeStreamSilently();
-                return true;
-            } else {
-                return false;
-            }
+            return requested.get() == null;
         }
 
         private void closeStreamSilently() {
@@ -220,18 +218,31 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
         @Override
         public void cancel() {
-            cancelled = true;
-            IdRequested idr = requested.get();
-            if (idr.id != ID_UNKNOWN) {
-                try {
-                    // a negative request cancels the stream
-                    requester.accept(idr.id, -1L);
-                } catch (Exception e) {
-                    Exceptions.throwIfFatal(e);
-                    closeStreamSilently();
-                    RxJavaPlugins.onError(e);
-                    return;
+            while (true) {
+                IdRequested idr = requested.get();
+                if (idr == null) {
+                    // already cancelled
+                    break;
                 }
+                if (requested.compareAndSet(idr, null)) {
+                    if (idr.id != ID_UNKNOWN) {
+                        cancelUpstream(idr.id);
+                    }
+                    break;
+                }
+            }
+        }
+
+        private void cancelUpstream(long id) {
+            try {
+                // a negative request cancels the stream
+                requester.accept(id, -1L);
+            } catch (Exception e) {
+                Exceptions.throwIfFatal(e);
+                RxJavaPlugins.onError(e);
+                return;
+            } finally {
+                closeStreamSilently();
             }
         }
 
