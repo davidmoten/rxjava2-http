@@ -189,7 +189,7 @@ public final class Server {
                 // send the bytes -128, 0, 0, 0 to indicate completion
                 writeInt(out, Integer.MIN_VALUE);
                 out.flush();
-                System.out.println("complete sent for " + id);
+//                System.out.println("complete sent for " + id);
             } catch (IOException e) {
                 RxJavaPlugins.onError(e);
             }
@@ -219,7 +219,6 @@ public final class Server {
             writeInt(out, b.remaining());
             out.write(Util.toBytes(b));
             out.flush();
-            System.out.println("written "+ id + " " + b);
         }
     }
 
