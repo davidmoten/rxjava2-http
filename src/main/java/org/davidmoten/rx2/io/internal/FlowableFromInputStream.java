@@ -5,17 +5,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.reactivex.Flowable;
 import io.reactivex.exceptions.Exceptions;
 import io.reactivex.functions.BiConsumer;
 import io.reactivex.internal.subscriptions.SubscriptionHelper;
-import io.reactivex.internal.util.EmptyComponent;
 import io.reactivex.plugins.RxJavaPlugins;
 
 public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
@@ -36,6 +39,8 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
     private static final class FromStreamSubscription extends AtomicInteger implements Subscription {
 
+        private static final Logger log = LoggerFactory.getLogger(FromStreamSubscription.class);
+
         private static final long serialVersionUID = 5917186677331992560L;
 
         private static final long ID_UNKNOWN = 0;
@@ -48,6 +53,15 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         private int length = 0;
         private byte[] buffer;
         private int bufferIndex;
+        private volatile boolean finished;
+        private Throwable error;
+
+        FromStreamSubscription(InputStream in, BiConsumer<Long, Long> requester, Subscriber<? super ByteBuffer> child) {
+            this.in = in;
+            this.requester = requester;
+            this.child = child;
+            this.requested = new AtomicReference<>(new IdRequested(0, 0));
+        }
 
         private static final class IdRequested {
             final long id;
@@ -59,39 +73,40 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
             }
         }
 
-        FromStreamSubscription(InputStream in, BiConsumer<Long, Long> requester, Subscriber<? super ByteBuffer> child) {
-            this.in = in;
-            this.requester = requester;
-            this.child = child;
-            this.requested = new AtomicReference<>(new IdRequested(0, 0));
-        }
-
-        public void start() {
+        void start() {
+            log.debug("calling child.onSubscribe");
             child.onSubscribe(this);
+            log.debug("reading id");
             long id;
             try {
                 id = Util.readLong(in);
             } catch (Throwable e) {
                 Exceptions.throwIfFatal(e);
                 closeStreamSilently();
-                child.onSubscribe(EmptyComponent.INSTANCE);
-                child.onError(e);
+                error = e;
+                finished = true;
+                drain();
                 return;
             }
+            log.debug("id=" + id);
             while (true) {
                 IdRequested idr = requested.get();
                 if (idr == null) {
+                    // cancel occured while reading id
+                    // we must endeavour to cancel the server side of the connection explicitly
                     cancelUpstream(id);
                     break;
                 }
                 if (requested.compareAndSet(idr, new IdRequested(id, idr.requested))) {
                     try {
+                        log.debug("requesting {} from stream {}", idr.requested, idr.id);
                         requester.accept(id, idr.requested);
                     } catch (Exception e) {
                         Exceptions.throwIfFatal(e);
                         closeStreamSilently();
-                        child.onError(e);
-                        return;
+                        error = e;
+                        finished = true;
+                        break;
                     }
                     break;
                 }
@@ -114,12 +129,12 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                     if (requested.compareAndSet(idr, new IdRequested(idr.id, r2))) {
                         if (idr.id != ID_UNKNOWN) {
                             try {
+                                log.debug("requesting {} from stream {}", idr.requested, idr.id);
                                 requester.accept(idr.id, idr.requested);
                             } catch (Exception e) {
                                 Exceptions.throwIfFatal(e);
-                                closeStreamSilently();
-                                // TODO use finished and error fields
-                                child.onError(e);
+                                error = e;
+                                finished = true;
                                 return;
                             }
                             break;
@@ -132,6 +147,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
         private void drain() {
             if (getAndIncrement() == 0) {
+                log.debug("draining");
                 int missed = 1;
                 while (true) {
                     IdRequested idr = requested.get();
@@ -142,21 +158,29 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                             return;
                         }
                         // read some more
+                        boolean d = finished;
                         if (buffer == null) {
-                            try {
-                                length = Util.readInt(in);
-                            } catch (IOException e1) {
-                                emitError(e1);
+                            if (d) {
+                                Throwable err = error;
+                                error = null;
+                                emitError(err);
                                 return;
+                            } else {
+                                try {
+                                    length = Util.readInt(in);
+                                } catch (IOException ex) {
+                                    emitError(ex);
+                                    return;
+                                }
+                                if (length == Integer.MIN_VALUE) {
+                                    System.out.println("complete");
+                                    closeStreamSilently();
+                                    child.onComplete();
+                                    return;
+                                }
+                                buffer = new byte[Math.abs(length)];
+                                bufferIndex = 0;
                             }
-                            if (length == Integer.MIN_VALUE) {
-                                System.out.println("complete");
-                                closeStreamSilently();
-                                child.onComplete();
-                                return;
-                            }
-                            buffer = new byte[Math.abs(length)];
-                            bufferIndex = 0;
                         }
                         try {
                             int count = in.read(buffer, bufferIndex, Math.abs(length) - bufferIndex);
@@ -175,6 +199,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                                     child.onNext(ByteBuffer.wrap(buffer, 0, length));
                                     buffer = null;
                                     e++;
+                                    ExecutorService ex = Executors.newFixedThreadPool(4);
                                 }
                             }
                         } catch (Throwable ex) {

@@ -60,7 +60,7 @@ public final class FlowableSingleFlatMapPublisher<S, T> extends Flowable<T> {
             Publisher<? extends T> f;
             try {
                 f = mapper.apply(value);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 child.onError(e);
                 return;
             }

@@ -55,7 +55,8 @@ public class ClientTest {
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             BiConsumer<Long, Long> requester = createRequester(port(server));
-            Client.read(Single.fromCallable(() -> con.getInputStream()), requester) //
+            InputStream in = con.getInputStream();
+            Client.read(Single.just(in), requester) //
                     .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .timeout(2, TimeUnit.SECONDS) //
@@ -445,7 +446,7 @@ public class ClientTest {
 
     private static Server createServerFlowableFactoryThrows() {
         // Create Server
-        Server server = new Server(8080);
+        Server server = new Server(0);
         ServletContextHandler context = new ServletContextHandler();
         ServletHolder defaultServ = new ServletHolder("default", HandlerServletFactoryThrows.class);
         defaultServ.setInitParameter("resourceBase", System.getProperty("user.dir"));
