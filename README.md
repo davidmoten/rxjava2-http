@@ -74,7 +74,7 @@ Flowable<Integer> numbers =
 To ensure backpressure is applied over the network (so operating system IO buffers don't fill and block threads) it's a good idea to request data in batches:
 
 * apply `rebatchRequests` to the client-side Flowable
-* [*rxjava2-extras*](https://github.com/davidmoten/rxjava2-http) has a number of request manipulating operators (`minRequest`, `maxRequest` and another version of [`rebatchRequests`](https://github.com/davidmoten/rxjava2-extras#rebatchrequests) with different features)
+* [*rxjava2-extras*](https://github.com/davidmoten/rxjava2-extras) has a number of request manipulating operators (`minRequest`, `maxRequest` and another version of [`rebatchRequests`](https://github.com/davidmoten/rxjava2-extras#rebatchrequests) with different features)
 
 ### Quiet streams
 Note that a long running quiet source Flowable over http(s) is indistinguishable from a chopped connection (by a firewall for instance). To avoid this:
