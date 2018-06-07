@@ -68,6 +68,7 @@ public final class Client {
                     HttpURLConnection con = (HttpURLConnection) u.openConnection();
                     con.setRequestMethod(method.method());
                     con.setUseCaches(false);
+                    con.setReadTimeout(0);
                     return con.getInputStream();
                 }, //
                 in -> read(Single.just(in), requester), //

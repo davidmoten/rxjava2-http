@@ -224,20 +224,23 @@ public class ClientTest {
         Flowable<ByteBuffer> flowable = Flowable.rangeLong(1, Long.MAX_VALUE)
                 .map(n -> ByteBuffer.wrap(Util.toBytes(n)));
         Server server = createServerAsync(flowable);
-        long n = 1000;
+        long n = 10000000;
         long t = System.currentTimeMillis();
+        long[] count = new long[1];
         try {
             get(server) //
                     .build() //
-                    .skip(n) //
+                    .doOnNext(bb -> {
+                        if (count[0]++ % 100000 == 0)
+                            System.out.println((System.currentTimeMillis()-t)/1000+ "s:" +count[0]);
+                    }).skip(n) //
                     .take(1) //
                     .map(bb -> bb.getLong()) //
                     .test() //
-                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .awaitDone(300, TimeUnit.SECONDS) //
                     .assertValue(n + 1) //
                     .assertComplete();
-            System.out.println(new DecimalFormat("0000.0")
-                    .format(1000 * n / (System.currentTimeMillis() - t)) + "items/s");
+            System.out.println((1000 * n / (System.currentTimeMillis() - t)) + "items/s");
         } finally {
             // Stop Server
             server.stop();

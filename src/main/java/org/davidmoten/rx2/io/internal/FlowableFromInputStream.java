@@ -59,7 +59,8 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         private volatile Throwable error;
         private static final IdRequested HAVE_NOT_READ_ID = new IdRequested(0, 0);
 
-        FromStreamSubscription(InputStream in, BiConsumer<Long, Long> requester, Subscriber<? super ByteBuffer> child) {
+        FromStreamSubscription(InputStream in, BiConsumer<Long, Long> requester,
+                Subscriber<? super ByteBuffer> child) {
             this.in = in;
             this.requester = requester;
             this.child = child;
@@ -188,15 +189,18 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                             }
                         }
                         try {
-                            int count = in.read(buffer, bufferIndex, Math.abs(length) - bufferIndex);
+                            int count = in.read(buffer, bufferIndex,
+                                    Math.abs(length) - bufferIndex);
                             if (count == -1) {
-                                emitError(new EOFException("encountered EOF before expected length was read"));
+                                emitError(new EOFException(
+                                        "encountered EOF before expected length was read"));
                                 return;
                             }
                             bufferIndex += count;
                             if (bufferIndex == Math.abs(length)) {
                                 if (length < 0) {
-                                    String t = new String(buffer, 0, -length, StandardCharsets.UTF_8);
+                                    String t = new String(buffer, 0, -length,
+                                            StandardCharsets.UTF_8);
                                     buffer = null;
                                     child.onError(new RuntimeException(t));
                                     return;
@@ -223,8 +227,11 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         }
 
         private void emitError(Throwable e) {
-            closeStreamSilently();
-            child.onError(e);
+            if (!cancelled()) {
+                closeStreamSilently();
+                System.out.println("emitting error "+ e.getMessage());
+                child.onError(e);
+            }
         }
 
         private boolean tryCancelled() {
@@ -232,11 +239,17 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         }
 
         private void closeStreamSilently() {
+            System.out.println("closing in");
             Util.close(in);
+        }
+
+        private boolean cancelled() {
+            return requested.get() == null;
         }
 
         @Override
         public void cancel() {
+            System.out.println("cancelled");
             while (true) {
                 IdRequested idr = requested.get();
                 if (idr == null) {
@@ -275,7 +288,8 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
             idr = requested.get();
             long r2 = idr.requested - e;
             if (r2 < 0L) {
-                RxJavaPlugins.onError(new IllegalStateException("More produced than requested: " + r2));
+                RxJavaPlugins
+                        .onError(new IllegalStateException("More produced than requested: " + r2));
                 r2 = 0;
             }
             if (requested.compareAndSet(idr, new IdRequested(idr.id, r2))) {

@@ -25,6 +25,7 @@ import io.reactivex.Scheduler;
 import io.reactivex.Single;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.plugins.RxJavaPlugins;
 
 public final class ServletHandler {
 
@@ -66,6 +67,9 @@ public final class ServletHandler {
                 handleStreamBlocking(publisher, resp.getOutputStream(), r);
             } else {
                 AsyncContext asyncContext = req.startAsync();
+                // prevent timeout because streams can be long-running
+                // TODO make configurable?
+                asyncContext.setTimeout(0);
                 handleStreamNonBlocking(publisher, asyncContext.getResponse().getOutputStream(), r,
                         asyncContext);
             }
@@ -101,12 +105,9 @@ public final class ServletHandler {
     private void handleStreamNonBlocking(Publisher<? extends ByteBuffer> publisher,
             OutputStream out, long request, AsyncContext asyncContext) {
         long id = nextId(random);
-        AtomicBoolean once = new AtomicBoolean();
         Runnable done = () -> {
             map.remove(id);
-            if (once.compareAndSet(false, true)) {
-                asyncContext.complete();
-            }
+            asyncContext.complete();
         };
         handleStream(publisher, out, request, id, done);
     }
