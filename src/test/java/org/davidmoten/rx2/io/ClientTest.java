@@ -1,5 +1,6 @@
 package org.davidmoten.rx2.io;
 
+import static org.davidmoten.rx2.io.Servers.createServerAsync;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -8,6 +9,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -16,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.davidmoten.rx2.io.Client.Builder;
 import org.davidmoten.rx2.io.Client.Requester;
+import org.davidmoten.rx2.io.internal.Util;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -34,7 +37,7 @@ import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subscribers.TestSubscriber;
 
 public class ClientTest {
-    
+
     private static final Logger log = LoggerFactory.getLogger(ClientTest.class);
 
     private static final Flowable<ByteBuffer> SOURCE = Flowable.just(
@@ -217,6 +220,31 @@ public class ClientTest {
     }
 
     @Test
+    public void testLongStream() throws Exception {
+        Flowable<ByteBuffer> flowable = Flowable.rangeLong(1, Long.MAX_VALUE)
+                .map(n -> ByteBuffer.wrap(Util.toBytes(n)));
+        Server server = createServerAsync(flowable);
+        long n = 1000;
+        long t = System.currentTimeMillis();
+        try {
+            get(server) //
+                    .build() //
+                    .skip(n) //
+                    .take(1) //
+                    .map(bb -> bb.getLong()) //
+                    .test() //
+                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .assertValue(n + 1) //
+                    .assertComplete();
+            System.out.println(new DecimalFormat("0000.0")
+                    .format(1000 * n / (System.currentTimeMillis() - t)) + "items/s");
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
     public void testRangeManyTimes() throws Exception {
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
         Server server = createServerAsync(flowable);
@@ -328,7 +356,7 @@ public class ClientTest {
                     .skip(500) //
                     .take(4);
             f.zipWith(f, (a, b) -> a) //
-//                    .timeout(5, TimeUnit.SECONDS, Schedulers.io()) //
+                    // .timeout(5, TimeUnit.SECONDS, Schedulers.io()) //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
                     .assertResult(501, 502, 503, 504);
@@ -430,24 +458,6 @@ public class ClientTest {
     public void testRequesterNon200ResponseCode() throws Exception {
         Requester r = new Client.Requester("http://localhost/doesNotExist", HttpMethod.GET);
         r.accept(1L, 1L);
-    }
-
-    private static Server createServerAsync(Flowable<ByteBuffer> flowable) {
-        // Create Server
-        Server server = new Server(0);
-        ServletContextHandler context = new ServletContextHandler();
-        ServletHolder defaultServ = new ServletHolder("default", HandlerServletAsync.class);
-        defaultServ.setInitParameter("resourceBase", System.getProperty("user.dir"));
-        defaultServ.setInitParameter("dirAllowed", "true");
-        context.addServlet(defaultServ, "/");
-        server.setHandler(context);
-        HandlerServletAsync.flowable = flowable;
-        try {
-            server.start();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return server;
     }
 
     private static Server createServerFlowableFactoryThrows() {

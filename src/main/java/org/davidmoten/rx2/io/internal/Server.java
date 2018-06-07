@@ -29,11 +29,11 @@ public final class Server {
         // prevent instantiation
     }
 
-    public static void handle(Publisher<? extends ByteBuffer> flowable, SingleSource<OutputStream> out, Runnable done,
+    public static void handle(Publisher<? extends ByteBuffer> flowable, SingleSource<OutputStream> out, Runnable completion,
             long id, Scheduler requestScheduler, Consumer<Subscription> subscription) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
-        HandlerSubscriber subscriber = new HandlerSubscriber(out, done, id, requestScheduler);
+        HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id, requestScheduler);
         try {
             subscription.accept(subscriber);
         } catch (Exception e) {

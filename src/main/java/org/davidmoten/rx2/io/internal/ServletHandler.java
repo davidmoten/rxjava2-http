@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
@@ -41,7 +42,8 @@ public final class ServletHandler {
         this.requestScheduler = requestScheduler;
     }
 
-    public void doGet(Function<? super HttpServletRequest, ? extends Publisher<? extends ByteBuffer>> publisherFactory,
+    public void doGet(
+            Function<? super HttpServletRequest, ? extends Publisher<? extends ByteBuffer>> publisherFactory,
             HttpServletRequest req, HttpServletResponse resp, Processing processing)
             throws ServletException, IOException {
         Publisher<? extends ByteBuffer> publisher;
@@ -54,8 +56,8 @@ public final class ServletHandler {
         doGet(publisher, req, resp, processing);
     }
 
-    public void doGet(Publisher<? extends ByteBuffer> publisher, HttpServletRequest req, HttpServletResponse resp,
-            Processing processing) throws ServletException, IOException {
+    public void doGet(Publisher<? extends ByteBuffer> publisher, HttpServletRequest req,
+            HttpServletResponse resp, Processing processing) throws ServletException, IOException {
         String idString = req.getParameter("id");
         if (idString == null) {
             final long r = getRequest(req);
@@ -64,7 +66,8 @@ public final class ServletHandler {
                 handleStreamBlocking(publisher, resp.getOutputStream(), r);
             } else {
                 AsyncContext asyncContext = req.startAsync();
-                handleStreamNonBlocking(publisher, asyncContext.getResponse().getOutputStream(), r, asyncContext);
+                handleStreamNonBlocking(publisher, asyncContext.getResponse().getOutputStream(), r,
+                        asyncContext);
             }
         } else {
             long id = Long.parseLong(idString);
@@ -73,7 +76,8 @@ public final class ServletHandler {
         }
     }
 
-    private void handleStreamBlocking(Publisher<? extends ByteBuffer> publisher, OutputStream out, long request) {
+    private void handleStreamBlocking(Publisher<? extends ByteBuffer> publisher, OutputStream out,
+            long request) {
         CountDownLatch latch = new CountDownLatch(1);
         long id = nextId(random);
         Runnable done = () -> {
@@ -94,20 +98,23 @@ public final class ServletHandler {
         }
     }
 
-    private void handleStreamNonBlocking(Publisher<? extends ByteBuffer> publisher, OutputStream out, long request,
-            AsyncContext asyncContext) {
+    private void handleStreamNonBlocking(Publisher<? extends ByteBuffer> publisher,
+            OutputStream out, long request, AsyncContext asyncContext) {
         long id = nextId(random);
+        AtomicBoolean once = new AtomicBoolean();
         Runnable done = () -> {
             map.remove(id);
-            asyncContext.complete();
+            if (once.compareAndSet(false, true)) {
+                asyncContext.complete();
+            }
         };
         handleStream(publisher, out, request, id, done);
     }
 
-    private void handleStream(Publisher<? extends ByteBuffer> publisher, OutputStream out, long request, long id,
-            Runnable done) {
+    private void handleStream(Publisher<? extends ByteBuffer> publisher, OutputStream out,
+            long request, long id, Runnable completion) {
         Consumer<Subscription> subscription = sub -> map.put(id, sub);
-        Server.handle(publisher, Single.just(out), done, id, requestScheduler, subscription);
+        Server.handle(publisher, Single.just(out), completion, id, requestScheduler, subscription);
         if (request > 0) {
             Subscription sub = map.get(id);
             if (sub != null) {
