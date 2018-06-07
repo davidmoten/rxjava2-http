@@ -149,4 +149,12 @@ The core of the library is support for publishing a `Flowable<ByteBuffer>` over 
 ### Nested Flowables
 I have a design in mind for publishing nested Flowables over HTTP as well (representing the beginning of a nested Flowable with a special length value). I don't currently have a use case but if you do raise an issue and we'll implement it.
 
+## Throughput
+Peak throughput with embedded jetty server and client on same host is about 1.3GB/s for 64K byte array items.
+
+Throughput drops considerably for smaller byte arrays:
+
+```
+
+```
 
