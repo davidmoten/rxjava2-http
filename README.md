@@ -44,7 +44,7 @@ public class HandlerServlet extends FlowableHttpServlet {
 ```
 The default behaviour is to schedule requests on `Schedulers.io()` but this is configurable via another `FlowableHttpServlet` constructor.
 
-Bear in mind that each `ByteBuffer` in the server flowable will be reconstituted as is on the client side and you will want to ensure that the client can allocate byte arrays for each item. For example, mobile platforms like Android have quite low max heap sizes so that if the client is one of those platforms you will need to chunk up the data appropriately. 
+Bear in mind that each `ByteBuffer` in the server flowable will be reconstituted as is on the client side and you will want to ensure that the client can allocate byte arrays for each item. For example, mobile platforms like Android have quite low max heap sizes so that if the client is one of those platforms you will need to chunk up the data appropriately. (This may be a use-case for supporting [Nested Flowables](#nested-flowables), let me know if you need it).
 
 ### Create client
 Assuming the servlet above is listening on `http://localhost:8080/stream`, this is how you access it over HTTP:
