@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -55,8 +53,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         private int length = 0;
         private byte[] buffer;
         private int bufferIndex;
-        private volatile boolean finished;
-        private Throwable error;
+        private volatile Throwable error;
         private static final IdRequested HAVE_NOT_READ_ID = new IdRequested(0, 0);
 
         FromStreamSubscription(InputStream in, BiConsumer<Long, Long> requester, Subscriber<? super ByteBuffer> child) {
@@ -90,7 +87,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                 Exceptions.throwIfFatal(e);
                 closeStreamSilently();
                 error = e;
-                finished = true;
                 return;
             }
             log.debug("id=" + id);
@@ -110,7 +106,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                         Exceptions.throwIfFatal(e);
                         closeStreamSilently();
                         error = e;
-                        finished = true;
                         break;
                     }
                     break;
@@ -145,7 +140,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                             } catch (Exception e) {
                                 Exceptions.throwIfFatal(e);
                                 error = e;
-                                finished = true;
                                 return;
                             }
                             break;
@@ -166,8 +160,8 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                     long e = 0;
                     if (r == 0) {
                         // need to cover off not being able to get the id or make an initial request
-                        if (finished) {
-                            Throwable err = error;
+                        Throwable err = error;
+                        if (err != null) {
                             error = null;
                             emitError(err);
                             return;
@@ -178,10 +172,9 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                             return;
                         }
                         // read some more
-                        boolean d = finished;
+                        Throwable err = error;
                         if (buffer == null) {
-                            if (d) {
-                                Throwable err = error;
+                            if (err != null) {
                                 error = null;
                                 emitError(err);
                                 return;
