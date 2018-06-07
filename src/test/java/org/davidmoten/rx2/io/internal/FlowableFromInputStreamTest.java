@@ -1,13 +1,21 @@
 package org.davidmoten.rx2.io.internal;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.davidmoten.rx2.io.internal.FlowableFromInputStream.IdRequested;
 import org.junit.Test;
 
+import io.reactivex.plugins.RxJavaPlugins;
 import io.reactivex.subscribers.TestSubscriber;
 
 public class FlowableFromInputStreamTest {
@@ -36,8 +44,8 @@ public class FlowableFromInputStreamTest {
 
     @Test
     public void testRequesterFailsOnCancel() {
-        ByteArrayInputStream in = new ByteArrayInputStream(new byte[] { 0, 0, 0, 0, 0, 0, 0, 2, 0,
-                0, 0, 1, 12, 0, 0, 0, 1, 13, -128, 0, 0, 0 });
+        ByteArrayInputStream in = new ByteArrayInputStream(
+                new byte[] { 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 12, 0, 0, 0, 1, 13, -128, 0, 0, 0 });
         TestSubscriber<ByteBuffer> ts = new FlowableFromInputStream(in, (id, r) -> {
             if (r == -1) {
                 throw new RuntimeException("will appear in RxJavaPlugins onError output");
@@ -47,9 +55,9 @@ public class FlowableFromInputStreamTest {
                 .assertValueCount(1);
         ts.cancel();
         ts.assertValueCount(1) //
-          .requestMore(100) //
-          .assertValueCount(1) //
-          .assertNotTerminated();
+                .requestMore(100) //
+                .assertValueCount(1) //
+                .assertNotTerminated();
     }
 
     @Test
@@ -135,6 +143,20 @@ public class FlowableFromInputStreamTest {
                 .test() //
                 .assertNoValues() //
                 .assertError(EOFException.class);
+    }
+
+    @Test
+    public void testProducedWhenNegative() {
+        try {
+            List<Throwable> list = new CopyOnWriteArrayList<>();
+            RxJavaPlugins.setErrorHandler(e -> list.add(e));
+            AtomicReference<IdRequested> r = new AtomicReference<>(new IdRequested(0, 1));
+            FlowableFromInputStream.produced(r, 2);
+            assertEquals(1, list.size());
+            assertTrue(list.get(0) instanceof IllegalStateException);
+        } finally {
+            RxJavaPlugins.reset();
+        }
     }
 
 }

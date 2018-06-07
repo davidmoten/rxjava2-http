@@ -13,6 +13,8 @@ import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
+
 import io.reactivex.Flowable;
 import io.reactivex.exceptions.Exceptions;
 import io.reactivex.functions.BiConsumer;
@@ -37,7 +39,8 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         subscription.start();
     }
 
-    private static final class FromStreamSubscription extends AtomicInteger implements Subscription {
+    @VisibleForTesting
+    static final class FromStreamSubscription extends AtomicInteger implements Subscription {
 
         private static final Logger log = LoggerFactory.getLogger(FromStreamSubscription.class);
 
@@ -61,16 +64,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
             this.requester = requester;
             this.child = child;
             this.requested = new AtomicReference<>(HAVE_NOT_READ_ID);
-        }
-
-        private static final class IdRequested {
-            final long id;
-            final long requested;
-
-            IdRequested(long id, long requested) {
-                this.id = id;
-                this.requested = requested;
-            }
         }
 
         void start() {
@@ -220,17 +213,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                         }
                     }
                     if (e != 0) {
-                        while (true) {
-                            idr = requested.get();
-                            long r2 = idr.requested - e;
-                            if (r2 < 0L) {
-                                RxJavaPlugins.onError(new IllegalStateException("More produced than requested: " + r2));
-                                r2 = 0;
-                            }
-                            if (requested.compareAndSet(idr, new IdRequested(idr.id, r2))) {
-                                break;
-                            }
-                        }
+                        produced(requested, e);
                     }
                     missed = addAndGet(-missed);
                     if (missed == 0) {
@@ -284,6 +267,33 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
             }
         }
 
+    }
+    
+    @VisibleForTesting
+    static void produced(AtomicReference<IdRequested> requested, long e) {
+        IdRequested idr;
+        while (true) {
+            idr = requested.get();
+            long r2 = idr.requested - e;
+            if (r2 < 0L) {
+                RxJavaPlugins.onError(new IllegalStateException("More produced than requested: " + r2));
+                r2 = 0;
+            }
+            if (requested.compareAndSet(idr, new IdRequested(idr.id, r2))) {
+                break;
+            }
+        }
+    }
+    
+    @VisibleForTesting
+    static final class IdRequested {
+        final long id;
+        final long requested;
+
+        IdRequested(long id, long requested) {
+            this.id = id;
+            this.requested = requested;
+        }
     }
 
 }
