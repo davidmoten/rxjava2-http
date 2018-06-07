@@ -229,7 +229,7 @@ public final class Server {
 
         private void writeOnNext(ByteBuffer b) throws IOException {
             if (firstOnNext) {
-                log.debug("server: onNext");
+                log.debug("server: first onNext");
                 firstOnNext = false;
             }
             writeInt(out, b.remaining());

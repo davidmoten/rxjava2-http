@@ -1,5 +1,8 @@
 package org.davidmoten.rx2.io.internal;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
@@ -20,6 +23,13 @@ public class ServletHandlerTest {
         Mockito.doThrow(new InterruptedException()).when(latch).await();
         latch.countDown();
         ServletHandler.waitFor(latch);
+    }
+    
+    @Test
+    public void testNextId() {
+        Random r = Mockito.mock(Random.class);
+        Mockito.when(r.nextLong()).thenReturn(0L, 10L);
+        assertEquals(10, ServletHandler.nextId(r));
     }
 
 }

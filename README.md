@@ -89,6 +89,8 @@ OR
 
 * put a `timeout` operator on the Flowable on the client side and `retry`
 
+The heartbeat option is especially good if a reconnect could mean missed emissions.
+
 ### Orphan streams on the server
 
 It's also a good idea to:
