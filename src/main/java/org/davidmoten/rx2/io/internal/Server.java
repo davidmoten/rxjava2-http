@@ -10,6 +10,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.reactivex.Scheduler;
 import io.reactivex.Scheduler.Worker;
@@ -27,9 +29,8 @@ public final class Server {
         // prevent instantiation
     }
 
-    public static void handle(Publisher<? extends ByteBuffer> flowable,
-            SingleSource<OutputStream> out, Runnable done, long id, Scheduler requestScheduler,
-            Consumer<Subscription> subscription) {
+    public static void handle(Publisher<? extends ByteBuffer> flowable, SingleSource<OutputStream> out, Runnable done,
+            long id, Scheduler requestScheduler, Consumer<Subscription> subscription) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
         HandlerSubscriber subscriber = new HandlerSubscriber(out, done, id, requestScheduler);
@@ -43,6 +44,8 @@ public final class Server {
 
     private static final class HandlerSubscriber extends AtomicInteger
             implements Subscriber<ByteBuffer>, Subscription, SingleObserver<OutputStream> {
+
+        private static final Logger log = LoggerFactory.getLogger(HandlerSubscriber.class);
 
         private static final long serialVersionUID = 1331107616659478552L;
 
@@ -71,6 +74,7 @@ public final class Server {
         public void onSubscribe(Subscription parent) {
             this.parent = parent;
             outSource.subscribe(this);
+            log.debug("subscribed to source");
         }
 
         // SingleObserver for outSource
@@ -95,6 +99,7 @@ public final class Server {
 
         @Override
         public void request(long n) {
+            log.debug("server request id={}, n={}",id, n);
             worker.schedule(() -> {
                 parent.request(n);
                 drain();
@@ -155,6 +160,7 @@ public final class Server {
                                 if (!cancelled) {
                                     writeError(e);
                                 }
+                                completion.run();
                                 return;
                             }
                         } else if (d) {
@@ -164,7 +170,9 @@ public final class Server {
                                 parent.cancel();
                                 queue.clear();
                                 worker.dispose();
-                                writeError(err);
+                                if (!cancelled) {
+                                    writeError(err);
+                                }
                                 completion.run();
                                 return;
                             } else {
@@ -185,17 +193,19 @@ public final class Server {
         }
 
         private void doOnComplete() {
+            log.debug("server: onComplete");
             try {
                 // send the bytes -128, 0, 0, 0 to indicate completion
                 writeInt(out, Integer.MIN_VALUE);
                 out.flush();
-//                System.out.println("complete sent for " + id);
+                // System.out.println("complete sent for " + id);
             } catch (IOException e) {
                 RxJavaPlugins.onError(e);
             }
         }
 
         private void writeError(Throwable err) {
+            log.debug("server: onError", err);
             try {
                 // set initial size to cover size of most stack traces
                 NoCopyByteArrayOutputStream bytes = new NoCopyByteArrayOutputStream(4096);
@@ -214,8 +224,14 @@ public final class Server {
                 }
             }
         }
+        
+        boolean firstOnNext = true;
 
         private void writeOnNext(ByteBuffer b) throws IOException {
+            if (firstOnNext) {
+                log.debug("server: onNext");
+                firstOnNext = false;
+            }
             writeInt(out, b.remaining());
             out.write(Util.toBytes(b));
             out.flush();

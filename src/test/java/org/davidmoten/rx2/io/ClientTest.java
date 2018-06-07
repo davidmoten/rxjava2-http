@@ -22,6 +22,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.davidmoten.junit.Asserts;
 
@@ -32,6 +34,8 @@ import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subscribers.TestSubscriber;
 
 public class ClientTest {
+    
+    private static final Logger log = LoggerFactory.getLogger(ClientTest.class);
 
     private static final Flowable<ByteBuffer> SOURCE = Flowable.just(
             ByteBuffer.wrap(new byte[] { 1, 2, 3 }), ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
@@ -49,6 +53,7 @@ public class ClientTest {
     @Test
     public void testGetWithClient() throws Exception {
         Server server = createServerAsync(SOURCE);
+        log.debug("started server");
         try {
             HttpURLConnection con = (HttpURLConnection) new URL(
                     "http://localhost:" + port(server) + "/").openConnection();
@@ -56,6 +61,7 @@ public class ClientTest {
             con.setUseCaches(false);
             BiConsumer<Long, Long> requester = createRequester(port(server));
             InputStream in = con.getInputStream();
+            log.debug("obtained input stream");
             Client.read(Single.just(in), requester) //
                     .doOnNext(x -> System.out.println(x)) //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
@@ -254,7 +260,7 @@ public class ClientTest {
         }
     }
 
-    @Test
+    @Test(timeout=5000)
     public void testBackpressure() throws Exception {
         List<Long> requests = new CopyOnWriteArrayList<>();
         AtomicBoolean cancelled = new AtomicBoolean();
@@ -484,6 +490,7 @@ public class ClientTest {
 
             @Override
             public void accept(Long id, Long request) throws Exception {
+                log.debug("requesting id={}, n={}", id, request);
                 HttpURLConnection con = (HttpURLConnection) new URL(
                         "http://localhost:" + port + "/?id=" + id + "&r=" + request)
                                 .openConnection();

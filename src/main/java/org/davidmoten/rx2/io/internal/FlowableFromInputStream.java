@@ -23,6 +23,7 @@ import io.reactivex.plugins.RxJavaPlugins;
 
 public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
+    private static final Logger log = LoggerFactory.getLogger(FlowableFromInputStream.class);
     private final InputStream in;
     private final BiConsumer<Long, Long> requester;
 
@@ -33,6 +34,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
     @Override
     protected void subscribeActual(Subscriber<? super ByteBuffer> subscriber) {
+        log.debug("subscribeActual");
         FromStreamSubscription subscription = new FromStreamSubscription(in, requester, subscriber);
         subscription.start();
     }
@@ -55,12 +57,13 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         private int bufferIndex;
         private volatile boolean finished;
         private Throwable error;
+        private static final IdRequested HAVE_NOT_READ_ID = new IdRequested(0, 0);
 
         FromStreamSubscription(InputStream in, BiConsumer<Long, Long> requester, Subscriber<? super ByteBuffer> child) {
             this.in = in;
             this.requester = requester;
             this.child = child;
-            this.requested = new AtomicReference<>(new IdRequested(0, 0));
+            this.requested = new AtomicReference<>(HAVE_NOT_READ_ID);
         }
 
         private static final class IdRequested {
@@ -76,6 +79,9 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         void start() {
             log.debug("calling child.onSubscribe");
             child.onSubscribe(this);
+        }
+
+        private void readId(long n) {
             log.debug("reading id");
             long id;
             try {
@@ -97,10 +103,10 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                     cancelUpstream(id);
                     break;
                 }
-                if (requested.compareAndSet(idr, new IdRequested(id, idr.requested))) {
+                if (requested.compareAndSet(idr, new IdRequested(id, n))) {
                     try {
-                        log.debug("requesting {} from stream {}", idr.requested, idr.id);
-                        requester.accept(id, idr.requested);
+                        log.debug("requesting id={}, n={}", idr.id, n);
+                        requester.accept(id, n);
                     } catch (Exception e) {
                         Exceptions.throwIfFatal(e);
                         closeStreamSilently();
@@ -111,12 +117,18 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                     break;
                 }
             }
-            drain();
         }
 
         @Override
         public void request(long n) {
+            log.debug("request {}", n);
             if (SubscriptionHelper.validate(n)) {
+                if (requested.compareAndSet(HAVE_NOT_READ_ID, new IdRequested(0, 0))) {
+                    // watch out for concurrent calls to request at this point, should be handled ok
+                    readId(n);
+                    drain();
+                    return;
+                }
                 while (true) {
                     IdRequested idr = requested.get();
                     if (idr.requested == Long.MAX_VALUE) {
@@ -199,7 +211,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                                     child.onNext(ByteBuffer.wrap(buffer, 0, length));
                                     buffer = null;
                                     e++;
-                                    ExecutorService ex = Executors.newFixedThreadPool(4);
                                 }
                             }
                         } catch (Throwable ex) {
@@ -259,6 +270,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         }
 
         private void cancelUpstream(long id) {
+            log.debug("cancelUpstream");
             try {
                 // a negative request cancels the stream
                 requester.accept(id, -1L);
