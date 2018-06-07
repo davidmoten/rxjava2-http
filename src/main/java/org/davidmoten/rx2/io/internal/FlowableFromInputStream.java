@@ -82,7 +82,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                 error = e;
                 return;
             }
-            log.debug("id=" + id);
+            log.debug("id={}", id);
             while (true) {
                 IdRequested idr = requested.get();
                 if (idr == null) {
@@ -145,7 +145,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
         private void drain() {
             if (getAndIncrement() == 0) {
-                log.debug("draining");
                 int missed = 1;
                 while (true) {
                     IdRequested idr = requested.get();
@@ -268,7 +267,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         }
 
     }
-    
+
     @VisibleForTesting
     static void produced(AtomicReference<IdRequested> requested, long e) {
         IdRequested idr;
@@ -284,7 +283,7 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
             }
         }
     }
-    
+
     @VisibleForTesting
     static final class IdRequested {
         final long id;
