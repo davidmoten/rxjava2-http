@@ -260,7 +260,7 @@ public class ClientTest {
         }
     }
 
-    @Test(timeout=5000)
+    @Test
     public void testBackpressure() throws Exception {
         List<Long> requests = new CopyOnWriteArrayList<>();
         AtomicBoolean cancelled = new AtomicBoolean();

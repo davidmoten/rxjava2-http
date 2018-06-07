@@ -141,8 +141,8 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                     if (requested.compareAndSet(idr, new IdRequested(idr.id, r2))) {
                         if (idr.id != ID_UNKNOWN) {
                             try {
-                                log.debug("requesting {} from stream {}", idr.requested, idr.id);
-                                requester.accept(idr.id, idr.requested);
+                                log.debug("requesting {} from stream {}", idr.requested, n);
+                                requester.accept(idr.id, n);
                             } catch (Exception e) {
                                 Exceptions.throwIfFatal(e);
                                 error = e;
