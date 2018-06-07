@@ -239,7 +239,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
         }
 
         private void closeStreamSilently() {
-            System.out.println("closing in");
             Util.close(in);
         }
 
@@ -249,7 +248,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
         @Override
         public void cancel() {
-            System.out.println("cancelled");
             while (true) {
                 IdRequested idr = requested.get();
                 if (idr == null) {
