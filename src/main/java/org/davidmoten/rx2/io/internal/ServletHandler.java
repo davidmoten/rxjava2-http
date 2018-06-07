@@ -17,6 +17,8 @@ import org.davidmoten.rx2.http.Processing;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
+import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
+
 import io.reactivex.Flowable;
 import io.reactivex.Scheduler;
 import io.reactivex.Single;
@@ -83,6 +85,11 @@ public final class ServletHandler {
         };
         handleStream(publisher, out, request, id, done);
         // TODO configure max wait time or allow requester to decide?
+        waitFor(latch);
+    }
+
+    @VisibleForTesting
+    static void waitFor(CountDownLatch latch) {
         try {
             latch.await();
         } catch (InterruptedException e) {

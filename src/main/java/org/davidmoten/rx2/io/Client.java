@@ -11,8 +11,6 @@ import java.nio.ByteBuffer;
 import org.davidmoten.rx2.io.internal.FlowableFromInputStream;
 import org.davidmoten.rx2.io.internal.FlowableSingleFlatMapPublisher;
 import org.davidmoten.rx2.io.internal.Util;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.reactivex.Flowable;
 import io.reactivex.Single;
@@ -78,8 +76,6 @@ public final class Client {
 
     static final class Requester implements BiConsumer<Long, Long> {
         
-        private static final Logger log = LoggerFactory.getLogger(Requester.class);
-
         private final String url;
         private final HttpMethod method;
 
