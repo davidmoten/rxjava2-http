@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,12 +37,13 @@ import io.reactivex.functions.BiConsumer;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subscribers.TestSubscriber;
 
+@org.junit.FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ClientTest {
 
     private static final Logger log = LoggerFactory.getLogger(ClientTest.class);
 
-    private static final Flowable<ByteBuffer> SOURCE = Flowable.just(
-            ByteBuffer.wrap(new byte[] { 1, 2, 3 }), ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
+    private static final Flowable<ByteBuffer> SOURCE = Flowable.just(ByteBuffer.wrap(new byte[] { 1, 2, 3 }),
+            ByteBuffer.wrap(new byte[] { 4, 5, 6, 7 }));
 
     @Test
     public void isUtilityClass() {
@@ -58,8 +60,8 @@ public class ClientTest {
         Server server = createServerAsync(SOURCE);
         log.debug("started server");
         try {
-            HttpURLConnection con = (HttpURLConnection) new URL(
-                    "http://localhost:" + port(server) + "/").openConnection();
+            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:" + port(server) + "/")
+                    .openConnection();
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             BiConsumer<Long, Long> requester = createRequester(port(server));
@@ -115,8 +117,8 @@ public class ClientTest {
 
     @Test
     public void testStreamWithEmptyByteBufferThenMore() throws Exception {
-        Server server = createServerAsync(Flowable.just(ByteBuffer.wrap(new byte[] {}),
-                ByteBuffer.wrap(new byte[] { 1, 2 })));
+        Server server = createServerAsync(
+                Flowable.just(ByteBuffer.wrap(new byte[] {}), ByteBuffer.wrap(new byte[] { 1, 2 })));
         try {
             get(server) //
                     .build() //
@@ -203,8 +205,7 @@ public class ClientTest {
 
     @Test
     public void testCancel() throws Exception {
-        Server server = createServerAsync(
-                Flowable.just(ByteBuffer.wrap(new byte[] { 1 })).repeat());
+        Server server = createServerAsync(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })).repeat());
         try {
             get(server) //
                     .build() //
@@ -224,7 +225,7 @@ public class ClientTest {
         Flowable<ByteBuffer> flowable = Flowable.rangeLong(1, Long.MAX_VALUE)
                 .map(n -> ByteBuffer.wrap(Util.toBytes(n)));
         Server server = createServerAsync(flowable);
-        long n = 10000000;
+        long n = 1000000;
         long t = System.currentTimeMillis();
         long[] count = new long[1];
         try {
@@ -234,8 +235,7 @@ public class ClientTest {
                     .build() //
                     .doOnNext(bb -> {
                         if (count[0]++ % 100000 == 0)
-                            System.out.println(
-                                    (System.currentTimeMillis() - t) / 1000 + "s:" + count[0]);
+                            System.out.println((System.currentTimeMillis() - t) / 1000 + "s:" + count[0]);
                     }).skip(n) //
                     .take(1) //
                     .map(bb -> bb.getLong()) //
@@ -243,7 +243,59 @@ public class ClientTest {
                     .awaitDone(300, TimeUnit.SECONDS) //
                     .assertValue(n + 1) //
                     .assertComplete();
-            System.out.println((1000 * n / (System.currentTimeMillis() - t)) + "items/s");
+            System.out.println((1000 * n / (System.currentTimeMillis() - t)) + " items/s");
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+
+    @Test
+    public void test40ByteStream() throws Exception {
+        testByteStream(40, 100000);
+    }
+
+    @Test
+    public void test400ByteStream() throws Exception {
+        testByteStream(400, 10000);
+    }
+    
+    @Test
+    public void testLongByteArrayStream() throws Exception {
+        testByteStream(131072, 10000);
+    }
+
+    @Test
+    public void test4000ByteStream() throws Exception {
+        testByteStream(4000, 1000);
+    }
+
+    private void testByteStream(int numBytes, int numItems) throws Exception {
+        ByteBuffer b = ByteBuffer.wrap(new byte[numBytes]);
+        Flowable<ByteBuffer> flowable = Flowable //
+                .just(b).repeat();
+        Server server = createServerAsync(flowable);
+        long n = numItems;
+        long t = System.currentTimeMillis();
+        long[] count = new long[1];
+        try {
+            get(server) //
+                    .connectTimeoutMs(5000) //
+                    .readTimeoutMs(30000) //
+                    .build() //
+                    .doOnNext(bb -> {
+                        if (count[0]++ % 100000 == 0)
+                            System.out.println((System.currentTimeMillis() - t) / 1000 + "s:" + count[0]);
+                    }).skip(n) //
+                    .take(1) //
+                    .test() //
+                    .awaitDone(300, TimeUnit.SECONDS) //
+                    .assertValueCount(1) //
+                    .assertComplete();
+            long itemsPerSecond = 1000 * n / (System.currentTimeMillis() - t);
+            DecimalFormat df = new DecimalFormat("0.000");
+            System.out.println("numBytes=" + numBytes + ", " + itemsPerSecond + " items/s, "
+                    + df.format((itemsPerSecond * numBytes) / 1024.0 / 1024.0) + "MB/s");
         } finally {
             // Stop Server
             server.stop();
@@ -439,8 +491,8 @@ public class ClientTest {
         try {
             // Start Server
             server.start();
-            HttpURLConnection con = (HttpURLConnection) new URL(
-                    "http://localhost:" + port(server) + "/?r=100").openConnection();
+            HttpURLConnection con = (HttpURLConnection) new URL("http://localhost:" + port(server) + "/?r=100")
+                    .openConnection();
             con.setRequestMethod("GET");
             con.setUseCaches(false);
             InputStream in = con.getInputStream();
@@ -508,8 +560,7 @@ public class ClientTest {
             public void accept(Long id, Long request) throws Exception {
                 log.debug("requesting id={}, n={}", id, request);
                 HttpURLConnection con = (HttpURLConnection) new URL(
-                        "http://localhost:" + port + "/?id=" + id + "&r=" + request)
-                                .openConnection();
+                        "http://localhost:" + port + "/?id=" + id + "&r=" + request).openConnection();
                 con.setRequestMethod("GET");
                 con.setUseCaches(false);
                 assertEquals(HttpStatus.OK_200, con.getResponseCode());
