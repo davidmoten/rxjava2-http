@@ -31,6 +31,8 @@ public final class Client {
 
         private final String url;
         private HttpMethod method = HttpMethod.GET;
+        private int connectTimeoutMs = 30000;
+        private int readTimeoutMs = 0;
 
         Builder(String url) {
             this.url = url;
@@ -38,6 +40,16 @@ public final class Client {
 
         public Builder method(HttpMethod method) {
             this.method = method;
+            return this;
+        }
+
+        public Builder readTimeoutMs(int timeoutMs) {
+            this.readTimeoutMs = timeoutMs;
+            return this;
+        }
+
+        public Builder connectTimeoutMs(int timeoutMs) {
+            this.connectTimeoutMs = timeoutMs;
             return this;
         }
 
@@ -50,11 +62,12 @@ public final class Client {
         }
 
         public Flowable<ByteBuffer> build() {
-            return toFlowable(url, method);
+            return toFlowable(url, method, connectTimeoutMs, readTimeoutMs);
         }
     }
 
-    private static Flowable<ByteBuffer> toFlowable(String url, HttpMethod method) {
+    private static Flowable<ByteBuffer> toFlowable(String url, HttpMethod method,
+            int connectTimeoutMs, int readTimeoutMs) {
         URL u;
         try {
             u = new URL(url);
@@ -68,7 +81,8 @@ public final class Client {
                     HttpURLConnection con = (HttpURLConnection) u.openConnection();
                     con.setRequestMethod(method.method());
                     con.setUseCaches(false);
-                    con.setReadTimeout(0);
+                    con.setConnectTimeout(connectTimeoutMs);
+                    con.setReadTimeout(readTimeoutMs);
                     return con.getInputStream();
                 }, //
                 in -> read(Single.just(in), requester), //
@@ -76,7 +90,7 @@ public final class Client {
     }
 
     static final class Requester implements BiConsumer<Long, Long> {
-        
+
         private final String url;
         private final HttpMethod method;
 
@@ -88,8 +102,9 @@ public final class Client {
         @Override
         public void accept(Long id, Long request) throws Exception {
             try {
-                HttpURLConnection con = (HttpURLConnection) new URL(url + "?id=" + id + "&r=" + request) //
-                        .openConnection();
+                HttpURLConnection con = (HttpURLConnection) new URL(
+                        url + "?id=" + id + "&r=" + request) //
+                                .openConnection();
                 con.setRequestMethod(method.method());
                 con.setUseCaches(false);
                 int code = con.getResponseCode();
@@ -102,8 +117,10 @@ public final class Client {
         }
     }
 
-    public static Flowable<ByteBuffer> read(Single<InputStream> inSource, BiConsumer<Long, Long> requester) {
-        return new FlowableSingleFlatMapPublisher<>(inSource, in -> new FlowableFromInputStream(in, requester));
+    public static Flowable<ByteBuffer> read(Single<InputStream> inSource,
+            BiConsumer<Long, Long> requester) {
+        return new FlowableSingleFlatMapPublisher<>(inSource,
+                in -> new FlowableFromInputStream(in, requester));
     }
 
 }
