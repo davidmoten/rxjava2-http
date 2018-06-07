@@ -7,10 +7,13 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 import org.davidmoten.rx2.io.internal.FlowableFromInputStream;
 import org.davidmoten.rx2.io.internal.FlowableSingleFlatMapPublisher;
 import org.davidmoten.rx2.io.internal.Util;
+
+import com.github.davidmoten.guavamini.Preconditions;
 
 import io.reactivex.Flowable;
 import io.reactivex.Single;
@@ -33,6 +36,9 @@ public final class Client {
         private HttpMethod method = HttpMethod.GET;
         private int connectTimeoutMs = 30000;
         private int readTimeoutMs = 0;
+        private Map<String, String> requestHeaders = new HashMap<>();
+        private String username;
+        private String password;
 
         Builder(String url) {
             this.url = url;
@@ -52,6 +58,19 @@ public final class Client {
             this.connectTimeoutMs = timeoutMs;
             return this;
         }
+        
+        public Builder basicAuth(String username, String password) {
+            Preconditions.checkNotNull(username);
+            Preconditions.checkNotNull(password);
+            this.username = username;
+            this.password = password;
+            return this;
+        }
+        
+        public Builder header(String key, String value) {
+            requestHeaders.put(key, value);
+            return this;
+        }
 
         public <T> Flowable<T> serializer(Serializer<T> serializer) {
             return build().map(serializer::deserialize);
@@ -62,7 +81,7 @@ public final class Client {
         }
 
         public Flowable<ByteBuffer> build() {
-            return toFlowable(url, method, connectTimeoutMs, readTimeoutMs);
+            return toFlowable(url, method, connectTimeoutMs, readTimeoutMs, requestHeaders);
         }
     }
 
