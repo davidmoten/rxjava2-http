@@ -91,7 +91,6 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                 closeStreamSilently();
                 error = e;
                 finished = true;
-                drain();
                 return;
             }
             log.debug("id=" + id);
@@ -165,6 +164,15 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                     IdRequested idr = requested.get();
                     long r = idr.requested;
                     long e = 0;
+                    if (r == 0) {
+                        // need to cover off not being able to get the id or make an initial request
+                        if (finished) {
+                            Throwable err = error;
+                            error = null;
+                            emitError(err);
+                            return;
+                        }
+                    }
                     while (e != r) {
                         if (tryCancelled()) {
                             return;

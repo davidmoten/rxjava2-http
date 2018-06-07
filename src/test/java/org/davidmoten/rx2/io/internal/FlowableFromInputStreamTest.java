@@ -30,7 +30,7 @@ public class FlowableFromInputStreamTest {
             throw new RuntimeException("boo");
         }) //
                 .test(1) //
-                .assertValueCount(1) //
+                .assertValueCount(0) //
                 .assertErrorMessage("boo");
     }
 
