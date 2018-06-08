@@ -5,11 +5,14 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -21,10 +24,12 @@ import org.davidmoten.rx2.io.internal.FlowableSingleFlatMapPublisher;
 import org.davidmoten.rx2.io.internal.Util;
 
 import com.github.davidmoten.guavamini.Preconditions;
+import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.functions.BiConsumer;
+import io.reactivex.functions.Consumer;
 import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Client {
@@ -45,6 +50,7 @@ public final class Client {
         private int readTimeoutMs = 0;
         private Map<String, String> requestHeaders = new HashMap<>();
         private SSLSocketFactory sslSocketFactory;
+        private List<Consumer<HttpURLConnection>> transforms = new ArrayList<>();
 
         Builder(String url) {
             this.url = url;
@@ -65,6 +71,11 @@ public final class Client {
             return this;
         }
 
+        public Builder transform(Consumer<HttpURLConnection> transform) {
+            this.transforms.add(transform);
+            return this;
+        }
+
         public Builder basicAuth(String username, String password) {
             Preconditions.checkNotNull(username);
             Preconditions.checkNotNull(password);
@@ -76,12 +87,12 @@ public final class Client {
             requestHeaders.put(key, value);
             return this;
         }
-        
+
         public Builder sslSocketFactory(SSLSocketFactory sslSocketFactory) {
             this.sslSocketFactory = sslSocketFactory;
             return this;
         }
-        
+
         public Builder sslContext(SSLContext sslContext) {
             return sslSocketFactory(sslContext.getSocketFactory());
         }
@@ -95,48 +106,81 @@ public final class Client {
         }
 
         public Flowable<ByteBuffer> build() {
-            return toFlowable(url, method, connectTimeoutMs, readTimeoutMs, requestHeaders, sslSocketFactory);
+            return toFlowable(url,
+                    new Options(method, connectTimeoutMs, readTimeoutMs, requestHeaders, sslSocketFactory, transforms));
         }
     }
 
-    private static Flowable<ByteBuffer> toFlowable(String url, HttpMethod method, int connectTimeoutMs,
-            int readTimeoutMs, Map<String, String> requestHeaders, SSLSocketFactory sslSocketFactory) {
+    private static Flowable<ByteBuffer> toFlowable(String url, Options options) {
         URL u;
         try {
             u = new URL(url);
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
-        BiConsumer<Long, Long> requester = new Requester(url, method);
+        BiConsumer<Long, Long> requester = new Requester(url, options);
 
         return Flowable.using( //
                 () -> {
-                    HttpURLConnection con = (HttpURLConnection) u.openConnection();
-                    con.setRequestMethod(method.method());
-                    con.setUseCaches(false);
-                    con.setConnectTimeout(connectTimeoutMs);
-                    con.setReadTimeout(readTimeoutMs);
-                    requestHeaders.entrySet().stream()
-                            .forEach(entry -> con.setRequestProperty(entry.getKey(), entry.getValue()));
-                    if (sslSocketFactory!= null && con instanceof HttpsURLConnection) {
-                        HttpsURLConnection con2 = ((HttpsURLConnection) con);
-                        con2.setSSLSocketFactory(sslSocketFactory);
-                    }
-                    con.connect();
+                    final HttpURLConnection con = (HttpURLConnection) u.openConnection();
+                    prepareConnection(con, options);
                     return con.getInputStream();
                 }, //
                 in -> read(Single.just(in), requester), //
                 in -> Util.close(in));
     }
 
+    private static void prepareConnection(HttpURLConnection con, Options options) throws ProtocolException {
+        con.setRequestMethod(options.method.method());
+        con.setUseCaches(false);
+        con.setConnectTimeout(options.connectTimeoutMs);
+        con.setReadTimeout(options.readTimeoutMs);
+        options.requestHeaders.entrySet().stream()
+                .forEach(entry -> con.setRequestProperty(entry.getKey(), entry.getValue()));
+        if (options.sslSocketFactory != null && con instanceof HttpsURLConnection) {
+            ((HttpsURLConnection) con).setSSLSocketFactory(options.sslSocketFactory);
+        }
+        transform(con, options.transforms);
+    }
+
+    private static void transform(final HttpURLConnection con, List<Consumer<HttpURLConnection>> transforms) {
+        transforms.stream().forEach(transform -> {
+            try {
+                transform.accept(con);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @VisibleForTesting
+    static final class Options {
+        final HttpMethod method;
+        final int connectTimeoutMs;
+        int readTimeoutMs;
+        final Map<String, String> requestHeaders;
+        final SSLSocketFactory sslSocketFactory;
+        final List<Consumer<HttpURLConnection>> transforms;
+
+        Options(HttpMethod method, int connectTimeoutMs, int readTimeoutMs, Map<String, String> requestHeaders,
+                SSLSocketFactory sslSocketFactory, List<Consumer<HttpURLConnection>> transforms) {
+            this.method = method;
+            this.connectTimeoutMs = connectTimeoutMs;
+            this.readTimeoutMs = readTimeoutMs;
+            this.requestHeaders = requestHeaders;
+            this.sslSocketFactory = sslSocketFactory;
+            this.transforms = transforms;
+        }
+    }
+
     static final class Requester implements BiConsumer<Long, Long> {
 
         private final String url;
-        private final HttpMethod method;
+        private final Options options;
 
-        Requester(String url, HttpMethod method) {
+        Requester(String url, Options options) {
             this.url = url;
-            this.method = method;
+            this.options = options;
         }
 
         @Override
@@ -144,8 +188,7 @@ public final class Client {
             try {
                 HttpURLConnection con = (HttpURLConnection) new URL(url + "?id=" + id + "&r=" + request) //
                         .openConnection();
-                con.setRequestMethod(method.method());
-                con.setUseCaches(false);
+                prepareConnection(con, options);
                 int code = con.getResponseCode();
                 if (code != 200) {
                     throw new IOException("response code from request call was not 200: " + code);

@@ -11,12 +11,14 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.davidmoten.rx2.io.Client.Builder;
+import org.davidmoten.rx2.io.Client.Options;
 import org.davidmoten.rx2.io.Client.Requester;
 import org.davidmoten.rx2.io.internal.Util;
 import org.eclipse.jetty.http.HttpStatus;
@@ -211,7 +213,7 @@ public class ClientTest {
                     .build() //
                     .take(20) //
                     .test() //
-                    .awaitDone(10, TimeUnit.SECONDS) //
+                    .awaitDone(10, TimeUnit.SECONDS) // s
                     .assertValueCount(20) //
                     .assertComplete();
         } finally {
@@ -259,7 +261,7 @@ public class ClientTest {
     public void test400ByteStream() throws Exception {
         testByteStream(400, 10000);
     }
-    
+
     @Test
     public void testLongByteArrayStream() throws Exception {
         testByteStream(131072, 10000);
@@ -514,7 +516,8 @@ public class ClientTest {
 
     @Test
     public void testRequesterNon200ResponseCode() throws Exception {
-        Requester r = new Client.Requester("http://localhost/doesNotExist", HttpMethod.GET);
+        Requester r = new Client.Requester("http://localhost/doesNotExist",
+                new Options(HttpMethod.GET, 1000, 1000, Collections.emptyMap(), null, Collections.emptyList()));
         r.accept(1L, 1L);
     }
 

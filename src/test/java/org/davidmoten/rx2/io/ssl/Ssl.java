@@ -1,4 +1,4 @@
-package org.davidmoten.rx2.io;
+package org.davidmoten.rx2.io.ssl;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,17 +29,18 @@ public class Ssl {
         return keyManagers;
     }
 
-    static TrustManager[] getTrustManagers() {
+    public static TrustManager[] getTrustManagers() {
         InputStream trustStore = Ssl.class.getResourceAsStream("/trustStore.jks");
         TrustManager trustManager = new ExtendedTrustManager(trustStore, PASSWORD.toCharArray(), false);
         TrustManager[] trustManagers = new TrustManager[] { trustManager };
         return trustManagers;
     }
 
-    static SSLContext createTlsSslContext(KeyManager[] keyManagers, TrustManager[] trustManagers)
+    public static SSLContext createTlsSslContext(KeyManager[] keyManagers, TrustManager[] trustManagers)
             throws NoSuchAlgorithmException, KeyManagementException {
         SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(keyManagers, trustManagers, new java.security.SecureRandom());
         return sslContext;
     }
+
 }

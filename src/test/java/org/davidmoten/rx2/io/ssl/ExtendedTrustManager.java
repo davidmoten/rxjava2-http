@@ -1,4 +1,4 @@
-package org.davidmoten.rx2.io;
+package org.davidmoten.rx2.io.ssl;
 
 import java.io.IOException;
 import java.io.InputStream;
