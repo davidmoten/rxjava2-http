@@ -36,9 +36,12 @@ public class Response {
     public static Builder publisher(Publisher<? extends ByteBuffer> publisher) {
         return new Builder(publisher);
     }
-    
+
     public static Response from(Publisher<? extends ByteBuffer> publisher) {
-        return publisher(publisher).build();
+        return publisher(publisher) //
+                .async(true) //
+                .requestScheduler(Schedulers.io()) //
+                .build();
     }
 
     public static final class Builder {
@@ -64,11 +67,11 @@ public class Response {
             this.async = async;
             return this;
         }
-        
+
         public Builder sync() {
             return async(false);
         }
-        
+
         public Response build() {
             return new Response(publisher, requestScheduler, async);
         }

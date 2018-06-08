@@ -9,6 +9,7 @@ import org.davidmoten.rx2.http.FlowableHttpServlet;
 import org.davidmoten.rx2.http.Response;
 
 import io.reactivex.Flowable;
+import io.reactivex.schedulers.Schedulers;
 
 @WebServlet
 public final class HandlerServletSync extends FlowableHttpServlet {
@@ -21,6 +22,7 @@ public final class HandlerServletSync extends FlowableHttpServlet {
     public Response respond(HttpServletRequest req) {
         return Response //
                 .publisher(flowable) //
+                .requestScheduler(Schedulers.io()) //
                 .sync() //
                 .build();
     }
