@@ -41,13 +41,17 @@ public final class Client {
     }
 
     public static Builder get(String url) {
-        return new Builder(url);
+        return new Builder(url, HttpMethod.GET);
+    }
+    
+    public static Builder post(String url) {
+        return new Builder(url, HttpMethod.POST);
     }
 
     static final class Builder {
 
         private final String url;
-        private HttpMethod method = HttpMethod.GET;
+        private final HttpMethod method ;
         private int connectTimeoutMs = 30000;
         private int readTimeoutMs = 0;
         private Map<String, String> requestHeaders = new HashMap<>();
@@ -55,13 +59,9 @@ public final class Client {
         private List<Consumer<HttpURLConnection>> transforms = new ArrayList<>();
         private Proxy proxy;
 
-        Builder(String url) {
+        Builder(String url, HttpMethod method) {
             this.url = url;
-        }
-
-        public Builder method(HttpMethod method) {
             this.method = method;
-            return this;
         }
 
         public Builder readTimeoutMs(int timeoutMs) {

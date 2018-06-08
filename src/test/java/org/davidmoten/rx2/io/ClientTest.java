@@ -433,6 +433,10 @@ public class ClientTest {
         return Client.get("http://localhost:" + port(server) + "/");
     }
 
+    private static Builder post(Server server) {
+        return Client.post("http://localhost:" + port(server) + "/");
+    }
+    
     private static int port(Server server) {
         return ((ServerConnector) server.getConnectors()[0]).getLocalPort();
     }
@@ -442,7 +446,6 @@ public class ClientTest {
         Server server = createServerAsync(SOURCE);
         try {
             get(server) //
-                    .method(HttpMethod.GET) //
                     .build() //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //
@@ -459,8 +462,7 @@ public class ClientTest {
     public void testGetWithClientHttpPost() throws Exception {
         Server server = createServerAsync(SOURCE);
         try {
-            get(server) //
-                    .method(HttpMethod.POST) //
+            post(server) //
                     .build() //
                     .reduce(0, (x, bb) -> x + bb.remaining()) //
                     .test() //

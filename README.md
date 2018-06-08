@@ -52,7 +52,7 @@ Assuming the servlet above is listening on `http://localhost:8080/stream`, this 
 ```java
 Flowable<Integer> numbers = 
   Client
-   .get("http://localhost:8080/stream")
+   .get("http://localhost:8080/stream") //HTTP GET
    .deserialized();
 ```
 More client options are available. Here is an example:
@@ -60,7 +60,7 @@ More client options are available. Here is an example:
 ```java
 Flowable<Integer> numbers = 
   Client
-    .get("https://localhost:8080/stream") 
+    .post("https://localhost:8080/stream") // HTTP POST
     .method(HttpMethod.GET)  
     .connectTimeoutMs(3000) 
     .readTimeoutMs(30000) 
