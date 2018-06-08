@@ -292,7 +292,8 @@ public class ClientTest {
                     .doOnNext(bb -> {
                         if (count[0]++ % 100000 == 0)
                             System.out.println((System.currentTimeMillis() - t) / 1000 + "s:" + count[0]);
-                    }).skip(n) //
+                    }) //
+                    .skip(n) //
                     .take(1) //
                     .test() //
                     .awaitDone(300, TimeUnit.SECONDS) //
@@ -316,6 +317,29 @@ public class ClientTest {
             for (int i = 0; i < 1000; i++) {
                 get(server) //
                         .<Integer>deserialized() //
+                        .skip(500) //
+                        .take(4) //
+                        .test() //
+                        .awaitDone(10, TimeUnit.SECONDS) //
+                        .assertValues(501, 502, 503, 504) //
+                        .assertComplete();
+
+            }
+        } finally {
+            // Stop Server
+            server.stop();
+        }
+    }
+    
+    @Test
+    public void testRangeRebatchedManyTimes() throws Exception {
+        Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
+        Server server = createServerAsync(flowable);
+        try {
+            for (int i = 0; i < 10; i++) {
+                get(server) //
+                        .<Integer>deserialized() //
+                        .rebatchRequests(2) //
                         .skip(500) //
                         .take(4) //
                         .test() //
