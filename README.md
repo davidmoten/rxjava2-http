@@ -154,9 +154,18 @@ I have a design in mind for publishing nested Flowables over HTTP as well (repre
 ## Throughput
 Peak throughput with embedded jetty server and client on same host is about 1.3GB/s for 64K byte array items.
 
-Throughput drops considerably for smaller byte arrays:
+Throughput drops considerably for smaller byte arrays (because of overhead per array and frequent flushes):
 
-```
+| ByteBuffer size | Localhost Throughput (MB/s) |
+| --------------- | ----------------- |
+| 2 | 0.27 |
+| 4 | 0.53 |
+| 8 | 1.2 |
+| 128 | 17 |
+| 512 | 68 |
+| 2K | 245 |
+| 8K | 744 |
+| 32K | 1156 |
+| 128K | 1340 |
 
-```
 
