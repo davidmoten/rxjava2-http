@@ -124,7 +124,7 @@ It's also a good idea to:
 This goes for any server Flowable, even one that is normally of very short duration. This is because the subscription is retained in a global map until cancellation and will retain some memory. Note that under a lot of GC pressure a container may choose to destroy a servlet (and run `init` again when another call to that servlet happens). In this circumstance `FlowableHttpServlet` is designed to cancel all outstanding subscriptions and release the mentioned map for gc. 
 
 ## Design
-WebSockets is a natural for this but can be blocked by corporate firewalls so this library starts with support for HTTP 1.0. 
+WebSockets is a natural for this but can be blocked by corporate firewalls so this library starts with support for HTTP 1.1. 
 
 We want API support for these actions:
 
