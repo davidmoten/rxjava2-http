@@ -105,6 +105,9 @@ public class ClientTest {
         Server server = createServerAsync(Flowable.just(ByteBuffer.wrap(new byte[] {})));
         try {
             get(server) //
+                    // get coverage of transform builder method
+                    .transform(con -> {
+                    }) //
                     .build() //
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
