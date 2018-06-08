@@ -166,6 +166,7 @@ Throughput drops considerably for smaller byte arrays (because of overhead per a
 | 2K | 245 |
 | 8K | 744 |
 | 32K | 1156 |
+| 64K | 1300 |
 | 128K | 1340 |
 
 
