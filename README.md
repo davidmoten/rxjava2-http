@@ -33,16 +33,20 @@ The servlet below exposes the `Flowable.range(1, 1000)` stream across HTTP:
 @WebServlet(urlPatterns={"/stream"})
 public class HandlerServlet extends FlowableHttpServlet {
       
-    public HandlerServlet() {
-        super(request -> 
+    @Override
+    public Response respond(HttpServletRequest req) {
+        Flowable<ByteBuffer> flowable = 
           Flowable
             .range(1,1000)
-            .map(Serializer.javaIo()::serialize)      
-        );
+            .map(Serializer.javaIo()::serialize));
+        return Response 
+            .publisher(flowable)
+            .build();
     }
 }
 ```
-The default behaviour is to schedule requests on `Schedulers.io()` but this is configurable via another `FlowableHttpServlet` constructor.
+
+The default behaviour is to schedule requests on `Schedulers.io()` and to handle requests asynchronously. These aspects can be configured via other methods in the `Response` builder.
 
 Bear in mind that each `ByteBuffer` in the server flowable will be reconstituted as is on the client side and you will want to ensure that the client can allocate byte arrays for each item. For example, mobile platforms like Android have quite low max heap sizes so that if the client is one of those platforms you will need to chunk up the data appropriately. (This may be a use-case for supporting [Nested Flowables](#nested-flowables), let me know if you need it).
 
