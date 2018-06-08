@@ -157,7 +157,7 @@ Peak throughput with embedded jetty server and client on same host is about 1.3G
 Throughput drops considerably for smaller byte arrays (because of overhead per array and frequent flushes):
 
 | ByteBuffer size | Localhost Throughput (MB/s) |
-| --------------- | ----------------- |
+| ---------------: | -----------------: |
 | 2 | 0.27 |
 | 4 | 0.53 |
 | 8 | 1.2 |
