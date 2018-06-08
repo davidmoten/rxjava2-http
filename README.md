@@ -30,7 +30,7 @@ Status: *pre-alpha* (in development)
 The servlet below exposes the `Flowable.range(1, 1000)` stream across HTTP:
 
 ```java
-@WebServlet(urlPatterns={"/stream"}, asyncSupported=true)
+@WebServlet(urlPatterns={"/stream"})
 public class HandlerServlet extends FlowableHttpServlet {
       
     public HandlerServlet() {

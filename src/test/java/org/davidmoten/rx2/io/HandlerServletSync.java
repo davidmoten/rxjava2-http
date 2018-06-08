@@ -13,7 +13,7 @@ import org.davidmoten.rx2.http.Processing;
 
 import io.reactivex.Flowable;
 
-@WebServlet(asyncSupported = true)
+@WebServlet
 public final class HandlerServletSync extends FlowableHttpServlet {
 
     private static final long serialVersionUID = 4294026368929063494L;
