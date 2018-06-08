@@ -42,10 +42,12 @@ public final class Client {
     }
 
     public static Builder get(String url) {
+        Preconditions.checkNotNull(url);
         return new Builder(url, HttpMethod.GET);
     }
     
     public static Builder post(String url) {
+        Preconditions.checkNotNull(url);
         return new Builder(url, HttpMethod.POST);
     }
 
@@ -66,11 +68,13 @@ public final class Client {
         }
 
         public Builder readTimeoutMs(int timeoutMs) {
+            Preconditions.checkArgument(timeoutMs >=0);
             this.readTimeoutMs = timeoutMs;
             return this;
         }
 
         public Builder connectTimeoutMs(int timeoutMs) {
+            Preconditions.checkArgument(timeoutMs >=0);
             this.connectTimeoutMs = timeoutMs;
             return this;
         }
@@ -82,11 +86,13 @@ public final class Client {
         }
 
         public Builder proxy(Proxy proxy) {
+            Preconditions.checkNotNull(proxy);
             this.proxy = proxy;
             return this;
         }
 
         public Builder transform(Consumer<HttpURLConnection> transform) {
+            Preconditions.checkNotNull(transform);
             this.transforms.add(transform);
             return this;
         }
@@ -99,20 +105,25 @@ public final class Client {
         }
 
         public Builder requestHeader(String key, String value) {
+            Preconditions.checkNotNull(key);
+            Preconditions.checkNotNull(value);
             requestHeaders.put(key, value);
             return this;
         }
 
         public Builder sslSocketFactory(SSLSocketFactory sslSocketFactory) {
+            Preconditions.checkNotNull(sslSocketFactory);
             this.sslSocketFactory = sslSocketFactory;
             return this;
         }
 
         public Builder sslContext(SSLContext sslContext) {
+            Preconditions.checkNotNull(sslContext);
             return sslSocketFactory(sslContext.getSocketFactory());
         }
 
         public <T> Flowable<T> serializer(Serializer<T> serializer) {
+            Preconditions.checkNotNull(serializer);
             return build().map(serializer::deserialize);
         }
 
