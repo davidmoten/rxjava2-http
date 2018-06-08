@@ -71,7 +71,7 @@ Flowable<Integer> numbers =
     .rebatchRequests(128); // necessary to enable backpressure over the network without blocking calls
 ```
 
-Note that if you need proxy authentication as well then use:
+Note that if you need proxy authentication as well then use System properties or set an `Authenticator`:
 
 ```java
 Authenticator authenticator = new Authenticator() {
@@ -127,9 +127,9 @@ WebSockets is a natural for this but can be blocked by corporate firewalls so th
 
 We want API support for these actions:
 
-* subscribe
-* request
-* cancel
+* *subscribe*
+* *request*
+* *cancel*
 
 Support is provided via these URL paths
 
@@ -163,13 +163,13 @@ Complete ::= NegativeMinLength
 <img src="src/docs/Error.png?raw=true"/><br/>
 
 
-The core of the library is support for publishing a `Flowable<ByteBuffer>` over HTTP. Serialization is a little optional extra that occurs at both ends.
+The core of the library is support for publishing a `Flowable<ByteBuffer>` over HTTP(S). Serialization is a little optional extra that occurs at both ends.
 
 ### Nested Flowables
 I have a design in mind for publishing nested Flowables over HTTP as well (representing the beginning of a nested Flowable with a special length value). I don't currently have a use case but if you do raise an issue and we'll implement it.
 
 ## Throughput
-Peak throughput with embedded jetty server and client on same host is about 1.3GB/s for 64K byte array items.
+Peak throughput with embedded jetty server and client on same host, non SSL, is about 1.3GB/s for 64K byte array items.
 
 Throughput drops considerably for smaller byte arrays (because of overhead per array and frequent flushes):
 
