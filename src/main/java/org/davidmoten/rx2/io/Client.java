@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
+import java.net.Proxy;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -51,6 +53,7 @@ public final class Client {
         private Map<String, String> requestHeaders = new HashMap<>();
         private SSLSocketFactory sslSocketFactory;
         private List<Consumer<HttpURLConnection>> transforms = new ArrayList<>();
+        private Proxy proxy;
 
         Builder(String url) {
             this.url = url;
@@ -68,6 +71,17 @@ public final class Client {
 
         public Builder connectTimeoutMs(int timeoutMs) {
             this.connectTimeoutMs = timeoutMs;
+            return this;
+        }
+
+        public Builder proxy(String host, int port) {
+            Preconditions.checkNotNull(host);
+            Preconditions.checkArgument(port > 0);
+            return proxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(host, port)));
+        }
+
+        public Builder proxy(Proxy proxy) {
+            this.proxy = proxy;
             return this;
         }
 
@@ -106,8 +120,8 @@ public final class Client {
         }
 
         public Flowable<ByteBuffer> build() {
-            return toFlowable(url,
-                    new Options(method, connectTimeoutMs, readTimeoutMs, requestHeaders, sslSocketFactory, transforms));
+            return toFlowable(url, new Options(method, connectTimeoutMs, readTimeoutMs, requestHeaders,
+                    sslSocketFactory, transforms, proxy));
         }
     }
 
@@ -122,12 +136,20 @@ public final class Client {
 
         return Flowable.using( //
                 () -> {
-                    final HttpURLConnection con = (HttpURLConnection) u.openConnection();
+                    final HttpURLConnection con = open(u, options);
                     prepareConnection(con, options);
                     return con.getInputStream();
                 }, //
                 in -> read(Single.just(in), requester), //
                 in -> Util.close(in));
+    }
+
+    private static HttpURLConnection open(URL url, Options options) throws IOException {
+        if (options.proxy == null) {
+            return (HttpURLConnection) url.openConnection();
+        } else {
+            return (HttpURLConnection) url.openConnection(options.proxy);
+        }
     }
 
     private static void prepareConnection(HttpURLConnection con, Options options) throws ProtocolException {
@@ -161,15 +183,17 @@ public final class Client {
         final Map<String, String> requestHeaders;
         final SSLSocketFactory sslSocketFactory;
         final List<Consumer<HttpURLConnection>> transforms;
+        final Proxy proxy;
 
         Options(HttpMethod method, int connectTimeoutMs, int readTimeoutMs, Map<String, String> requestHeaders,
-                SSLSocketFactory sslSocketFactory, List<Consumer<HttpURLConnection>> transforms) {
+                SSLSocketFactory sslSocketFactory, List<Consumer<HttpURLConnection>> transforms, Proxy proxy) {
             this.method = method;
             this.connectTimeoutMs = connectTimeoutMs;
             this.readTimeoutMs = readTimeoutMs;
             this.requestHeaders = requestHeaders;
             this.sslSocketFactory = sslSocketFactory;
             this.transforms = transforms;
+            this.proxy = proxy;
         }
     }
 

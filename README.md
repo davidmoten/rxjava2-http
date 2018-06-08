@@ -64,7 +64,9 @@ Flowable<Integer> numbers =
     .method(HttpMethod.GET)  
     .connectTimeoutMs(3000) 
     .readTimeoutMs(30000) 
+    .proxy(host, port)
     .sslContext(sslContext)
+    .transform(con -> con.setFollowRedirects(true))
     .basicAuth("username", "password")
     .serializer(serializer) // used for deserialization
     .rebatchRequests(128); // necessary to enable backpressure over the network without blocking calls

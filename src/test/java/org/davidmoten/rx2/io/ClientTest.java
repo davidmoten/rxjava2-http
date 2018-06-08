@@ -520,7 +520,7 @@ public class ClientTest {
     @Test
     public void testRequesterNon200ResponseCode() throws Exception {
         Requester r = new Client.Requester("http://localhost/doesNotExist",
-                new Options(HttpMethod.GET, 1000, 1000, Collections.emptyMap(), null, Collections.emptyList()));
+                new Options(HttpMethod.GET, 1000, 1000, Collections.emptyMap(), null, Collections.emptyList(), null));
         r.accept(1L, 1L);
     }
 
