@@ -84,6 +84,10 @@ Authenticator authenticator = new Authenticator() {
 Authenticator.setDefault(authenticator);
 ```
 
+### SSL/TLS
+
+The unit test [`ClientSslTest.java`](src/test/java/org/davidmoten/rx2/io/ClientSslTest.java) has a round-trip test using Jetty, TLS 1.2, keystore, truststore and basic authentication. Check it out if you are having trouble.  
+
 ### Serializers
 
 `Serializer.javaIo()` can be used to serialize classes that implement `Serializable`. It is much slower than products like *Kryo* or indeed if you have the time, custom serialization.
