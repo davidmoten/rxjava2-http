@@ -41,7 +41,7 @@ public class ClientSslTest {
     }
 
     private static Builder get(Server server) {
-        return Client.get("https://localhost:" + 8443 + "/");
+        return Client.get("https://localhost:" + PORT + "/");
     }
 
 }
