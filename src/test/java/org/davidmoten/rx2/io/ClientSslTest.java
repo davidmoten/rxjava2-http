@@ -27,7 +27,9 @@ public class ClientSslTest {
                     "password", "/trustStore.jks", "password", PORT);
             get(server) //
                     .sslContext(sslContext) //
-                    .basicAuth("username", "password") //
+                    // Note that the server-side authentication is configured in 
+                    // /realm.properties
+                    .basicAuth("user", "password") //
                     .build() //
                     .test() //
                     .awaitDone(5, TimeUnit.SECONDS) //
