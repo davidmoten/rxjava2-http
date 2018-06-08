@@ -72,6 +72,18 @@ Flowable<Integer> numbers =
     .rebatchRequests(128); // necessary to enable backpressure over the network without blocking calls
 ```
 
+Note that if you need proxy authentication as well then use:
+
+```java
+Authenticator authenticator = new Authenticator() {
+    public PasswordAuthentication getPasswordAuthentication() {
+        return (new PasswordAuthentication("user",
+                "password".toCharArray()));
+    }
+};
+Authenticator.setDefault(authenticator);
+```
+
 ### Serializers
 
 `Serializer.javaIo()` can be used to serialize classes that implement `Serializable`. It is much slower than products like *Kryo* or indeed if you have the time, custom serialization.
