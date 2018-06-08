@@ -3,8 +3,6 @@ package org.davidmoten.rx2.io;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
@@ -18,14 +16,13 @@ import io.reactivex.Flowable;
 public class ClientSslTest {
 
     @Test
-    // @Ignore
     public void testAuthenticatedSsl() throws Exception {
-        KeyManager[] keyManagers = Ssl.getKeyManagers();
         TrustManager[] trustManagers = Ssl.getTrustManagers();
-        SSLContext sslContext = Ssl.createTlsSslContext(keyManagers, trustManagers);
+        SSLContext sslContext = Ssl.createTlsSslContext(trustManagers);
         Server server = null;
         try {
-            server = Servers.createServerAsyncSsl(Flowable.just(ByteBuffer.wrap(new byte[] { 12 })));
+            server = Servers.createServerAsyncSsl(Flowable.just(ByteBuffer.wrap(new byte[] { 12 })), "/keyStore.jks",
+                    "password", "/trustStore.jks", "password");
             get(server) //
                     .sslContext(sslContext) //
                     .basicAuth("username", "password") //

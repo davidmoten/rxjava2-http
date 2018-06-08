@@ -39,29 +39,33 @@ public final class Servers {
         return server;
     }
 
-    public static Server createServerAsyncSsl(Flowable<ByteBuffer> flowable) {
+    public static Server createServerAsyncSsl(Flowable<ByteBuffer> flowable, String keyStore, String keyStorePassword,
+            String trustStore, String trustStorePassword) {
 
         Server server = new Server();
-        SslContextFactory sslContextFactory = new SslContextFactory("src/test/resources/keyStore.jks");
-        sslContextFactory.setKeyStorePassword("password");
+        SslContextFactory sslContextFactory = new SslContextFactory(
+                Servers.class.getResource(keyStore).toExternalForm());
+        sslContextFactory.setKeyStorePassword(keyStorePassword);
         try {
             KeyStore ks = KeyStore.getInstance("JKS");
-            try (InputStream in = new FileInputStream("src/test/resources/trustStore.jks")) {
-                ks.load(in, "password".toCharArray());
+            try (InputStream in = Servers.class.getResourceAsStream(trustStore)) {
+                ks.load(in, trustStorePassword.toCharArray());
             }
             sslContextFactory.setTrustStore(ks);
         } catch (IOException | KeyStoreException | NoSuchAlgorithmException | CertificateException e) {
             throw new RuntimeException(e);
         }
 
-        sslContextFactory.setTrustStorePassword("password");
+        sslContextFactory.setTrustStorePassword(trustStorePassword);
         SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory,
                 org.eclipse.jetty.http.HttpVersion.HTTP_1_1.toString());
+
+        final int port = 8443;
         
-     // HTTP Configuration
+        // HTTP Configuration
         HttpConfiguration config = new HttpConfiguration();
         config.setSecureScheme("https");
-        config.setSecurePort(8443);
+        config.setSecurePort(port);
         config.setOutputBufferSize(32768);
         config.setRequestHeaderSize(8192);
         config.setResponseHeaderSize(8192);
@@ -69,8 +73,9 @@ public final class Servers {
         config.setSendDateHeader(false);
 
         // create a https connector
-        ServerConnector connector = new ServerConnector(server, sslConnectionFactory, new HttpConnectionFactory(config));
-        connector.setPort(8443);
+        ServerConnector connector = new ServerConnector(server, sslConnectionFactory,
+                new HttpConnectionFactory(config));
+        connector.setPort(port);
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();

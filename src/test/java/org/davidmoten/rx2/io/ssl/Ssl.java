@@ -42,5 +42,10 @@ public class Ssl {
         sslContext.init(keyManagers, trustManagers, new java.security.SecureRandom());
         return sslContext;
     }
+    
+    public static SSLContext createTlsSslContext(TrustManager[] trustManagers)
+            throws NoSuchAlgorithmException, KeyManagementException {
+        return createTlsSslContext(null, trustManagers);
+    }
 
 }
