@@ -118,6 +118,10 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                 }
                 while (true) {
                     IdRequested idr = requested.get();
+                    if (idr == null) {
+                        // cancelled
+                        break;
+                    }
                     if (idr.requested == Long.MAX_VALUE) {
                         break;
                     }
