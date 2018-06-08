@@ -60,10 +60,12 @@ More client options are available. Here is an example:
 ```java
 Flowable<Integer> numbers = 
   Client
-    .get("http://localhost:8080/stream") 
+    .get("https://localhost:8080/stream") 
     .method(HttpMethod.GET)  
     .connectTimeoutMs(3000) 
     .readTimeoutMs(30000) 
+    .sslContext(sslContext)
+    .basicAuth("username", "password")
     .serializer(serializer) // used for deserialization
     .rebatchRequests(128); // necessary to enable backpressure over the network without blocking calls
 ```
