@@ -122,6 +122,39 @@ It's also a good idea to:
 
 This goes for any server Flowable, even one that is normally of very short duration. This is because the subscription is retained in a global map until cancellation and will retain some memory. Note that under a lot of GC pressure a container may choose to destroy a servlet (and run `init` again when another call to that servlet happens). In this circumstance `FlowableHttpServlet` is designed to cancel all outstanding subscriptions and release the mentioned map for gc. 
 
+### Blocking
+
+The Flowable returned by the `Client` is blocking in nature (it's reading across a network and can block while doing that). As a consequence make sure you don't run
+it on `Schedulers.computation` (that is one Scheduler we should never block) but rather use `Schedulers.io()` or `Schedulers.from(executor)`.
+
+A quick example of what **not** to do is this:
+
+```java
+//run the Client call every 10 seconds
+Flowable
+  .interval(10, TimeUnit.SECONDS) \\Not Good Because uses Scheduler.computation()
+  .flatMap(n -> 
+      Client
+        .get("http://localhost:8080/stream")
+        .deserialized())
+  .doOnNext(System.out::println)
+  .subscribe(...);
+```        
+Instead you should use an explicit `Scheduler` other than `computation`:
+```
+//run the Client call every 10 seconds on io()
+Flowable
+  .interval(10, TimeUnit.SECONDS, Schedulers.io()) \\ Good
+  .flatMap(n -> 
+      Client
+        .get("http://localhost:8080/stream")
+        .deserialized())
+  .doOnNext(System.out::println)
+  .subscribe(...);
+```
+
+A later version may use more of the non-blocking features of NIO. 
+
 ## Design
 WebSockets is a natural for this but can be blocked by corporate firewalls so this library starts with support for HTTP 1.1. 
 
