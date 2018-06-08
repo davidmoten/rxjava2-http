@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.davidmoten.rx2.io.Client.Builder;
 import org.davidmoten.rx2.io.Client.Options;
 import org.davidmoten.rx2.io.Client.Requester;
+import org.davidmoten.rx2.io.internal.HttpMethod;
 import org.davidmoten.rx2.io.internal.Util;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;

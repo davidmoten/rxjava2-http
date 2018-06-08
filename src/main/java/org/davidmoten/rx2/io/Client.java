@@ -23,6 +23,7 @@ import javax.net.ssl.SSLSocketFactory;
 
 import org.davidmoten.rx2.io.internal.FlowableFromInputStream;
 import org.davidmoten.rx2.io.internal.FlowableSingleFlatMapPublisher;
+import org.davidmoten.rx2.io.internal.HttpMethod;
 import org.davidmoten.rx2.io.internal.Util;
 
 import com.github.davidmoten.guavamini.Preconditions;
