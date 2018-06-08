@@ -119,8 +119,10 @@ public final class Client {
                     requestHeaders.entrySet().stream()
                             .forEach(entry -> con.setRequestProperty(entry.getKey(), entry.getValue()));
                     if (sslSocketFactory!= null && con instanceof HttpsURLConnection) {
-                        ((HttpsURLConnection) con).setSSLSocketFactory(sslSocketFactory);
+                        HttpsURLConnection con2 = ((HttpsURLConnection) con);
+                        con2.setSSLSocketFactory(sslSocketFactory);
                     }
+                    con.connect();
                     return con.getInputStream();
                 }, //
                 in -> read(Single.just(in), requester), //

@@ -9,13 +9,15 @@ import javax.net.ssl.TrustManager;
 
 import org.davidmoten.rx2.io.Client.Builder;
 import org.eclipse.jetty.server.Server;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.reactivex.Flowable;
 
 public class ClientSslTest {
 
-//    @Test
+    @Test
+    @Ignore
     public void testAuthenticatedSsl() throws Exception {
         System.setProperty("javax.net.debug", "all");
         KeyManager[] keyManagers = Ssl.getKeyManagers();
@@ -35,7 +37,7 @@ public class ClientSslTest {
             if (server != null) {
                 server.stop();
             }
-            System.setProperty("javax.net.debug", null);
+            System.setProperty("javax.net.debug", "");
         }
 
     }
