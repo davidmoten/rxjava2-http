@@ -61,7 +61,6 @@ More client options are available. Here is an example:
 Flowable<Integer> numbers = 
   Client
     .post("https://localhost:8080/stream") // HTTP POST
-    .method(HttpMethod.GET)  
     .connectTimeoutMs(3000) 
     .readTimeoutMs(30000) 
     .proxy(host, port)
