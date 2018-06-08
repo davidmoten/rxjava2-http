@@ -27,21 +27,18 @@ Status: *pre-alpha* (in development)
 ```
 
 ### Create servlet
-The servlet below exposes the `Flowable.range(1, 1000)` stream across HTTP:
+The servlet below exposes the `Flowable.range(1, 1000)` stream across HTTP using standard java serialization:
 
 ```java
 @WebServlet(urlPatterns={"/stream"})
 public class HandlerServlet extends FlowableHttpServlet {
       
-    @Override
-    public Response respond(HttpServletRequest req) {
-        Flowable<ByteBuffer> flowable = 
-          Flowable
-            .range(1,1000)
-            .map(Serializer.javaIo()::serialize));
-        return Response 
-            .publisher(flowable)
-            .build();
+  @Override
+  public Response respond(HttpServletRequest req) {
+    return Response.from(  
+      Flowable
+        .range(1,1000)
+        .map(Serializer.javaIo()::serialize)));
     }
 }
 ```

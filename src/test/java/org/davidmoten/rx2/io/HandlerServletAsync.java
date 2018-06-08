@@ -19,9 +19,7 @@ public final class HandlerServletAsync extends FlowableHttpServlet {
 
     @Override
     public Response respond(HttpServletRequest req) {
-        return Response //
-                .publisher(flowable) //
-                .build();
+        return Response.from(flowable);
     }
 
 }
