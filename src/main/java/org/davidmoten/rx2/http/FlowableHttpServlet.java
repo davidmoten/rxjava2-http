@@ -20,10 +20,10 @@ public class FlowableHttpServlet extends HttpServlet {
 
     private static final long serialVersionUID = 5492424521743846011L;
 
-    private final Scheduler requestScheduler;
-    private final Function<? super HttpServletRequest, ? extends Publisher<? extends ByteBuffer>> publisherFactory;
-    private final Processing processing;
-    private ServletHandler handler;
+    private final transient Scheduler requestScheduler;
+    private final transient Function<? super HttpServletRequest, ? extends Publisher<? extends ByteBuffer>> publisherFactory;
+    private final transient Processing processing;
+    private transient ServletHandler handler;
 
     public FlowableHttpServlet(
             Function<? super HttpServletRequest, ? extends Publisher<? extends ByteBuffer>> flowableFactory) {

@@ -136,8 +136,8 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
                                 error = e;
                                 return;
                             }
-                            break;
                         }
+                        break;
                     }
                 }
                 drain();
