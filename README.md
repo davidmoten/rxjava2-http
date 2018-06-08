@@ -54,7 +54,7 @@ Assuming the servlet above is listening on `http://localhost:8080/stream`, this 
 Flowable<Integer> numbers = 
   Client
    .get("http://localhost:8080/stream") //HTTP GET
-   .deserialized();
+   .deserialized(); // use standard java serialization
 ```
 More client options are available. Here is an example:
 
@@ -128,12 +128,12 @@ This goes for any server Flowable, even one that is normally of very short durat
 The Flowable returned by the `Client` is blocking in nature (it's reading across a network and can block while doing that). As a consequence make sure you don't run
 it on `Schedulers.computation` (that is one Scheduler we should never block) but rather use `Schedulers.io()` or `Schedulers.from(executor)`.
 
-A quick example of what **not** to do is this:
+A quick example of what **NOT** to do is this:
 
 ```java
 //run the Client call every 10 seconds
 Flowable
-  .interval(10, TimeUnit.SECONDS) \\Not Good Because uses Scheduler.computation()
+  .interval(10, TimeUnit.SECONDS) // Not Good Because uses Scheduler.computation()
   .flatMap(n -> 
       Client
         .get("http://localhost:8080/stream")
@@ -145,7 +145,7 @@ Instead you should use an explicit `Scheduler` other than `computation`:
 ```
 //run the Client call every 10 seconds on io()
 Flowable
-  .interval(10, TimeUnit.SECONDS, Schedulers.io()) \\ Good
+  .interval(10, TimeUnit.SECONDS, Schedulers.io()) // Good
   .flatMap(n -> 
       Client
         .get("http://localhost:8080/stream")
