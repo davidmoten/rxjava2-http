@@ -34,7 +34,7 @@ The servlet below exposes the `Flowable.range(1, 1000)` stream across HTTP:
 public class HandlerServlet extends FlowableHttpServlet {
       
     public HandlerServlet() {
-        super( request -> 
+        super(request -> 
           Flowable
             .range(1,1000)
             .map(Serializer.javaIo()::serialize)      

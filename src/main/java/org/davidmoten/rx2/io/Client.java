@@ -215,15 +215,36 @@ public final class Client {
             return sslSocketFactory(sslContext.getSocketFactory());
         }
 
+        /**
+         * Sets the deserializer to be used on the arriving {@link ByteBuffer}s.
+         * 
+         * @param serializer
+         *            the deserializer to be used
+         * @return this
+         */
         public <T> Flowable<T> serializer(Serializer<T> serializer) {
             Preconditions.checkNotNull(serializer);
             return build().map(serializer::deserialize);
         }
 
+        /**
+         * Returns the {@link Flowable} where deserialization is performed by
+         * {@link Serializer.javaIo()}.
+         * 
+         * @param <T>
+         *            the Flowable result type
+         * @return the built Flowable
+         */
         public <T extends Serializable> Flowable<T> deserialized() {
             return serializer(Serializer.javaIo());
         }
 
+        /**
+         * Returns the built {@link Flowable<ByteBuffer>} based on all the builder
+         * options specified.
+         * 
+         * @return the built Flowable.
+         */
         public Flowable<ByteBuffer> build() {
             return toFlowable(url, new Options(method, connectTimeoutMs, readTimeoutMs,
                     requestHeaders, sslSocketFactory, transforms, proxy));
