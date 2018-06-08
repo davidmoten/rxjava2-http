@@ -13,17 +13,14 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.davidmoten.rx2.http.Processing;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
 import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 
-import io.reactivex.Flowable;
 import io.reactivex.Scheduler;
 import io.reactivex.Single;
 import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
 
 public final class ServletHandler {
 
@@ -31,45 +28,29 @@ public final class ServletHandler {
 
     private final Map<Long, Subscription> map = new ConcurrentHashMap<>();
 
-    private final Scheduler requestScheduler;
-
-    public static ServletHandler create(Scheduler requestScheduler) {
-        return new ServletHandler(requestScheduler);
+    public static ServletHandler create() {
+        return new ServletHandler();
     }
 
-    private ServletHandler(Scheduler requestScheduler) {
-        this.requestScheduler = requestScheduler;
-    }
-
-    public void doGet(
-            Function<? super HttpServletRequest, ? extends Publisher<? extends ByteBuffer>> publisherFactory,
-            HttpServletRequest req, HttpServletResponse resp, Processing processing)
-            throws ServletException, IOException {
-        Publisher<? extends ByteBuffer> publisher;
-        try {
-            publisher = publisherFactory.apply(req);
-        } catch (Throwable e) {
-            doGet(Flowable.error(e), req, resp, processing);
-            return;
-        }
-        doGet(publisher, req, resp, processing);
+    private ServletHandler() {
     }
 
     public void doGet(Publisher<? extends ByteBuffer> publisher, HttpServletRequest req,
-            HttpServletResponse resp, Processing processing) throws ServletException, IOException {
+            HttpServletResponse resp, Scheduler requestScheduler, boolean async)
+            throws ServletException, IOException {
         String idString = req.getParameter("id");
         if (idString == null) {
             final long r = getRequest(req);
             resp.setContentType("application/octet-stream");
-            if (processing == Processing.SYNC || !req.isAsyncSupported()) {
-                handleStreamBlocking(publisher, resp.getOutputStream(), r);
+            if (!async || !req.isAsyncSupported()) {
+                handleStreamBlocking(publisher, resp.getOutputStream(), requestScheduler, r);
             } else {
                 AsyncContext asyncContext = req.startAsync();
                 // prevent timeout because streams can be long-running
                 // TODO make configurable?
                 asyncContext.setTimeout(0);
-                handleStreamNonBlocking(publisher, asyncContext.getResponse().getOutputStream(), r,
-                        asyncContext);
+                handleStreamNonBlocking(publisher, asyncContext.getResponse().getOutputStream(),
+                        requestScheduler, r, asyncContext);
             }
         } else {
             long id = Long.parseLong(idString);
@@ -79,14 +60,14 @@ public final class ServletHandler {
     }
 
     private void handleStreamBlocking(Publisher<? extends ByteBuffer> publisher, OutputStream out,
-            long request) {
+            Scheduler requestScheduler, long request) {
         CountDownLatch latch = new CountDownLatch(1);
         long id = nextId(random);
         Runnable done = () -> {
             map.remove(id);
             latch.countDown();
         };
-        handleStream(publisher, out, request, id, done);
+        handleStream(publisher, out, requestScheduler, request, id, done);
         // TODO configure max wait time or allow requester to decide?
         waitFor(latch);
     }
@@ -101,17 +82,17 @@ public final class ServletHandler {
     }
 
     private void handleStreamNonBlocking(Publisher<? extends ByteBuffer> publisher,
-            OutputStream out, long request, AsyncContext asyncContext) {
+            OutputStream out, Scheduler requestScheduler, long request, AsyncContext asyncContext) {
         long id = nextId(random);
         Runnable done = () -> {
             map.remove(id);
             asyncContext.complete();
         };
-        handleStream(publisher, out, request, id, done);
+        handleStream(publisher, out, requestScheduler, request, id, done);
     }
 
     private void handleStream(Publisher<? extends ByteBuffer> publisher, OutputStream out,
-            long request, long id, Runnable completion) {
+            Scheduler requestScheduler, long request, long id, Runnable completion) {
         Consumer<Subscription> subscription = sub -> map.put(id, sub);
         Server.handle(publisher, Single.just(out), completion, id, requestScheduler, subscription);
         if (request > 0) {

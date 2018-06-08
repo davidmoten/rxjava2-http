@@ -1,20 +1,19 @@
 package org.davidmoten.rx2.io;
 
-import java.io.IOException;
-
 import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServletRequest;
 
 import org.davidmoten.rx2.http.FlowableHttpServlet;
+import org.davidmoten.rx2.http.Response;
 
-@WebServlet(asyncSupported = true)
+@WebServlet
 public final class HandlerServletFactoryThrows extends FlowableHttpServlet {
 
     private static final long serialVersionUID = 4294026368929063494L;
 
-    public HandlerServletFactoryThrows() {
-        super(req -> {
-            throw new IOException("boo");
-        });
+    @Override
+    public Response respond(HttpServletRequest req) {
+        throw new RuntimeException("boo");
     }
 
 }

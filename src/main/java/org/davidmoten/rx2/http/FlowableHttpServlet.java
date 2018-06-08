@@ -1,7 +1,6 @@
 package org.davidmoten.rx2.http;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -10,48 +9,39 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.davidmoten.rx2.io.internal.ServletHandler;
-import org.reactivestreams.Publisher;
 
-import io.reactivex.Scheduler;
-import io.reactivex.functions.Function;
+import io.reactivex.Flowable;
 import io.reactivex.schedulers.Schedulers;
 
-public class FlowableHttpServlet extends HttpServlet {
+public abstract class FlowableHttpServlet extends HttpServlet {
 
     private static final long serialVersionUID = 5492424521743846011L;
 
-    private final transient Scheduler requestScheduler;
-    private final transient Function<? super HttpServletRequest, ? extends Publisher<? extends ByteBuffer>> publisherFactory;
-    private final transient Processing processing;
     private transient ServletHandler handler;
-
-    public FlowableHttpServlet(
-            Function<? super HttpServletRequest, ? extends Publisher<? extends ByteBuffer>> flowableFactory) {
-        this(flowableFactory, Processing.ASYNC);
-    }
-
-    public FlowableHttpServlet(
-            Function<? super HttpServletRequest, ? extends Publisher<? extends ByteBuffer>> flowableFactory,
-            Processing processing) {
-        this(flowableFactory, processing, Schedulers.io());
-    }
-
-    public FlowableHttpServlet(
-            Function<? super HttpServletRequest, ? extends Publisher<? extends ByteBuffer>> flowableFactory,
-            Processing processing, Scheduler requestScheduler) {
-        this.publisherFactory = flowableFactory;
-        this.processing = processing;
-        this.requestScheduler = requestScheduler;
-    }
 
     @Override
     public void init(ServletConfig config) throws ServletException {
-        handler = ServletHandler.create(requestScheduler);
+        handler = ServletHandler.create();
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        handler.doGet(publisherFactory, req, resp, processing);
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+        Response response;
+        try {
+            response = respond(req);
+        } catch (Throwable e) {
+            handler.doGet(Flowable.error(e), req, resp, Schedulers.io(), true);
+            return;
+        }
+        handler.doGet(response.publisher(), req, resp, response.requestScheduler(),
+                response.isAsync());
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+        doGet(req, resp);
     }
 
     @Override
@@ -59,5 +49,7 @@ public class FlowableHttpServlet extends HttpServlet {
         handler.close();
         handler = null;
     }
+
+    public abstract Response respond(HttpServletRequest req);
 
 }

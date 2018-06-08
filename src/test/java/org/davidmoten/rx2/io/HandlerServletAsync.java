@@ -1,14 +1,12 @@
 package org.davidmoten.rx2.io;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.davidmoten.rx2.http.FlowableHttpServlet;
+import org.davidmoten.rx2.http.Response;
 
 import io.reactivex.Flowable;
 
@@ -19,13 +17,11 @@ public final class HandlerServletAsync extends FlowableHttpServlet {
 
     public static Flowable<ByteBuffer> flowable = Flowable.empty();
 
-    public HandlerServletAsync() {
-        super(req -> flowable);
-    }
-
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        doGet(req, resp);
+    public Response respond(HttpServletRequest req) {
+        return Response //
+                .publisher(flowable) //
+                .build();
     }
 
 }

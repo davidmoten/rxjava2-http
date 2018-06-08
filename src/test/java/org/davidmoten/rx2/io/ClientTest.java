@@ -512,7 +512,7 @@ public class ClientTest {
                     .test() //
                     .awaitDone(10, TimeUnit.SECONDS) //
                     .assertNoValues() //
-                    .assertError(e -> e.getMessage().startsWith("java.io.IOException: boo"));
+                    .assertError(e -> e.getMessage().startsWith("java.lang.RuntimeException: boo"));
         } finally {
             // Stop Server
             server.stop();
