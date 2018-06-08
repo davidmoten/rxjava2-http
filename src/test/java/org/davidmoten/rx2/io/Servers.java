@@ -40,7 +40,7 @@ public final class Servers {
     }
 
     public static Server createServerAsyncSsl(Flowable<ByteBuffer> flowable, String keyStore, String keyStorePassword,
-            String trustStore, String trustStorePassword) {
+            String trustStore, String trustStorePassword, int port) {
 
         Server server = new Server();
         SslContextFactory sslContextFactory = new SslContextFactory(
@@ -60,7 +60,6 @@ public final class Servers {
         SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory,
                 org.eclipse.jetty.http.HttpVersion.HTTP_1_1.toString());
 
-        final int port = 8443;
         
         // HTTP Configuration
         HttpConfiguration config = new HttpConfiguration();

@@ -14,6 +14,8 @@ import org.junit.Test;
 import io.reactivex.Flowable;
 
 public class ClientSslTest {
+    
+    private static final int PORT = 8443;
 
     @Test
     public void testAuthenticatedSsl() throws Exception {
@@ -22,7 +24,7 @@ public class ClientSslTest {
         Server server = null;
         try {
             server = Servers.createServerAsyncSsl(Flowable.just(ByteBuffer.wrap(new byte[] { 12 })), "/keyStore.jks",
-                    "password", "/trustStore.jks", "password");
+                    "password", "/trustStore.jks", "password", PORT);
             get(server) //
                     .sslContext(sslContext) //
                     .basicAuth("username", "password") //
