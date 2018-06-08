@@ -242,7 +242,9 @@ public class ClientTest {
                     .doOnNext(bb -> {
                         if (count[0]++ % 100000 == 0)
                             System.out.println((System.currentTimeMillis() - t) / 1000 + "s:" + count[0]);
-                    }).skip(n) //
+                    }) //
+                    .rebatchRequests(20000)
+                    .skip(n) //
                     .take(1) //
                     .map(bb -> bb.getLong()) //
                     .test() //
