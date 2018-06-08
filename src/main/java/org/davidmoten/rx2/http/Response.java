@@ -36,6 +36,10 @@ public class Response {
     public static Builder publisher(Publisher<? extends ByteBuffer> publisher) {
         return new Builder(publisher);
     }
+    
+    public static Response from(Publisher<? extends ByteBuffer> publisher) {
+        return publisher(publisher).build();
+    }
 
     public static final class Builder {
 
@@ -64,7 +68,7 @@ public class Response {
         public Builder sync() {
             return async(false);
         }
-
+        
         public Response build() {
             return new Response(publisher, requestScheduler, async);
         }
