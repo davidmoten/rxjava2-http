@@ -1,6 +1,8 @@
-package org.davidmoten.rx2.io;
+package org.davidmoten.rx2.http;
 
 import java.io.OutputStream;
+
+import org.davidmoten.rx2.http.Writer;
 
 public interface WriterFactory {
 

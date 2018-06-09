@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.davidmoten.rx2.http.Response;
-import org.davidmoten.rx2.io.WriterFactory;
+import org.davidmoten.rx2.http.WriterFactory;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 

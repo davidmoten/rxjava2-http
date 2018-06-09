@@ -2,7 +2,6 @@ package org.davidmoten.rx2.http;
 
 import java.nio.ByteBuffer;
 
-import org.davidmoten.rx2.io.WriterFactory;
 import org.reactivestreams.Publisher;
 
 import io.reactivex.Scheduler;

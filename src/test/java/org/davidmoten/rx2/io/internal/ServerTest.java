@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.davidmoten.rx2.io.WriterFactory;
+import org.davidmoten.rx2.http.WriterFactory;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;

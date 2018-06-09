@@ -1,4 +1,4 @@
-package org.davidmoten.rx2.io;
+package org.davidmoten.rx2.http;
 
 import javax.servlet.http.HttpServletRequest;
 

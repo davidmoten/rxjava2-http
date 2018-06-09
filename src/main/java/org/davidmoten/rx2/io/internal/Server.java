@@ -7,8 +7,8 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.davidmoten.rx2.io.Writer;
-import org.davidmoten.rx2.io.WriterFactory;
+import org.davidmoten.rx2.http.Writer;
+import org.davidmoten.rx2.http.WriterFactory;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
