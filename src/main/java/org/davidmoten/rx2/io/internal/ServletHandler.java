@@ -23,6 +23,7 @@ import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 import io.reactivex.Flowable;
 import io.reactivex.Scheduler;
 import io.reactivex.Single;
+import io.reactivex.functions.BiConsumer;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
@@ -50,12 +51,13 @@ public final class ServletHandler {
                 response = responseProvider.call();
             } catch (Throwable e) {
                 // default to blocking
-                handleStreamBlocking(Flowable.error(e), resp.getOutputStream(), Schedulers.io(), r);
+                handleStreamBlocking(Flowable.error(e), resp.getOutputStream(), Schedulers.io(), r,
+                        Util.defaultWriter());
                 return;
             }
             if (!response.isAsync() || !req.isAsyncSupported()) {
                 handleStreamBlocking(response.publisher(), resp.getOutputStream(),
-                        response.requestScheduler(), r);
+                        response.requestScheduler(), r, response.writer());
             } else {
                 AsyncContext asyncContext = req.startAsync();
                 // prevent timeout because streams can be long-running
@@ -63,7 +65,7 @@ public final class ServletHandler {
                 asyncContext.setTimeout(0);
                 handleStreamNonBlocking(response.publisher(),
                         asyncContext.getResponse().getOutputStream(), response.requestScheduler(),
-                        r, asyncContext);
+                        r, asyncContext, response.writer());
             }
         } else {
             long id = Long.parseLong(idString);
@@ -73,14 +75,15 @@ public final class ServletHandler {
     }
 
     private void handleStreamBlocking(Publisher<? extends ByteBuffer> publisher, OutputStream out,
-            Scheduler requestScheduler, long request) {
+            Scheduler requestScheduler, long request,
+            BiConsumer<? super OutputStream, ? super ByteBuffer> writer) {
         CountDownLatch latch = new CountDownLatch(1);
         long id = nextId(random);
         Runnable done = () -> {
             map.remove(id);
             latch.countDown();
         };
-        handleStream(publisher, out, requestScheduler, request, id, done);
+        handleStream(publisher, out, requestScheduler, request, id, done, writer);
         // TODO configure max wait time or allow requester to decide?
         waitFor(latch);
     }
@@ -95,19 +98,22 @@ public final class ServletHandler {
     }
 
     private void handleStreamNonBlocking(Publisher<? extends ByteBuffer> publisher,
-            OutputStream out, Scheduler requestScheduler, long request, AsyncContext asyncContext) {
+            OutputStream out, Scheduler requestScheduler, long request, AsyncContext asyncContext,
+            BiConsumer<? super OutputStream, ? super ByteBuffer> writer) {
         long id = nextId(random);
         Runnable done = () -> {
             map.remove(id);
             asyncContext.complete();
         };
-        handleStream(publisher, out, requestScheduler, request, id, done);
+        handleStream(publisher, out, requestScheduler, request, id, done, writer);
     }
 
     private void handleStream(Publisher<? extends ByteBuffer> publisher, OutputStream out,
-            Scheduler requestScheduler, long request, long id, Runnable completion) {
+            Scheduler requestScheduler, long request, long id, Runnable completion,
+            BiConsumer<? super OutputStream, ? super ByteBuffer> writer) {
         Consumer<Subscription> subscription = sub -> map.put(id, sub);
-        Server.handle(publisher, Single.just(out), completion, id, requestScheduler, subscription);
+        Server.handle(publisher, Single.just(out), completion, id, requestScheduler, subscription,
+                writer);
         if (request > 0) {
             Subscription sub = map.get(id);
             if (sub != null) {

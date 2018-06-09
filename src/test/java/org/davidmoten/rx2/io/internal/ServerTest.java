@@ -18,6 +18,7 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 public class ServerTest {
+    
     @Test
     public void isUtilityClass() {
         Asserts.assertIsUtilityClass(Server.class);
@@ -34,7 +35,7 @@ public class ServerTest {
         Consumer<Subscription> consumer = sub -> {
         };
         Server.handle(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })), Single.just(out), () -> {
-        }, 123, Schedulers.trampoline(), consumer); //
+        }, 123, Schedulers.trampoline(), consumer, Util.defaultWriter()); //
     }
 
     @Test
@@ -51,7 +52,7 @@ public class ServerTest {
         try {
             Server.handle(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })), Single.just(out),
                     () -> {
-                    }, 123, Schedulers.trampoline(), consumer); //
+                    }, 123, Schedulers.trampoline(), consumer, Util.defaultWriter()); //
         } catch (RuntimeException e) {
             Assert.assertEquals("subscription consumer threw", e.getMessage());
         }
@@ -82,7 +83,7 @@ public class ServerTest {
         Server.handle(
                 Flowable.just(ByteBuffer.wrap(new byte[] { 1 })),
                 Single.just(out), () -> {
-                }, 123, Schedulers.trampoline(), consumer); //
+                }, 123, Schedulers.trampoline(), consumer, Util.defaultWriter()); //
         subscription.get().request(100);
     }
 }

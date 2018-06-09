@@ -18,6 +18,7 @@ import io.reactivex.Scheduler.Worker;
 import io.reactivex.SingleObserver;
 import io.reactivex.SingleSource;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.BiConsumer;
 import io.reactivex.functions.Consumer;
 import io.reactivex.internal.fuseable.SimplePlainQueue;
 import io.reactivex.internal.queue.SpscLinkedArrayQueue;
@@ -29,11 +30,14 @@ public final class Server {
         // prevent instantiation
     }
 
-    public static void handle(Publisher<? extends ByteBuffer> flowable, SingleSource<OutputStream> out, Runnable completion,
-            long id, Scheduler requestScheduler, Consumer<Subscription> subscription) {
+    public static void handle(Publisher<? extends ByteBuffer> flowable,
+            SingleSource<OutputStream> out, Runnable completion, long id,
+            Scheduler requestScheduler, Consumer<Subscription> subscription,
+            BiConsumer<? super OutputStream, ? super ByteBuffer> writer) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
-        HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id, requestScheduler);
+        HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id, requestScheduler,
+                writer);
         try {
             subscription.accept(subscriber);
         } catch (Exception e) {
@@ -54,6 +58,7 @@ public final class Server {
         private final Runnable completion;
         private final long id;
         private final Worker worker;
+        private final BiConsumer<? super OutputStream, ? super ByteBuffer> writer;
         private Subscription parent;
         private SimplePlainQueue<ByteBuffer> queue;
         private volatile boolean finished;
@@ -62,10 +67,12 @@ public final class Server {
         private Disposable disposable;
 
         HandlerSubscriber(SingleSource<OutputStream> outSource, Runnable completion, long id,
-                Scheduler requestScheduler) {
+                Scheduler requestScheduler,
+                BiConsumer<? super OutputStream, ? super ByteBuffer> writer) {
             this.outSource = outSource;
             this.completion = completion;
             this.id = id;
+            this.writer = writer;
             this.worker = requestScheduler.createWorker();
             this.queue = new SpscLinkedArrayQueue<>(16);
         }
@@ -99,7 +106,7 @@ public final class Server {
 
         @Override
         public void request(long n) {
-            log.debug("server request id={}, n={}",id, n);
+            log.debug("server request id={}, n={}", id, n);
             worker.schedule(() -> {
                 parent.request(n);
                 drain();
@@ -149,10 +156,10 @@ public final class Server {
                             return;
                         }
                         boolean d = finished;
-                        ByteBuffer b = queue.poll();
-                        if (b != null) {
+                        ByteBuffer bb = queue.poll();
+                        if (bb != null) {
                             try {
-                                writeOnNext(b);
+                                writeOnNext(bb);
                             } catch (Throwable e) {
                                 parent.cancel();
                                 queue.clear();
@@ -224,16 +231,20 @@ public final class Server {
                 }
             }
         }
-        
+
         boolean firstOnNext = true;
 
-        private void writeOnNext(ByteBuffer b) throws IOException {
+        private void writeOnNext(ByteBuffer bb) throws IOException {
             if (firstOnNext) {
                 log.debug("server: first onNext");
                 firstOnNext = false;
             }
-            writeInt(out, b.remaining());
-            out.write(Util.toBytes(b));
+            writeInt(out, bb.remaining());
+            try {
+                writer.accept(out, bb);
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
             out.flush();
         }
     }

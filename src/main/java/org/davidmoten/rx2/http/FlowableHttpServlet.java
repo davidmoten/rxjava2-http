@@ -1,7 +1,6 @@
 package org.davidmoten.rx2.http;
 
 import java.io.IOException;
-import java.util.concurrent.Callable;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;

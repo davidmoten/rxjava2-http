@@ -4,14 +4,28 @@ import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+import io.reactivex.functions.BiConsumer;
 import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Util {
 
     private Util() {
         // prevent instantiation
+    }
+
+    private static final BiConsumer<OutputStream, ByteBuffer> writer = new BiConsumer<OutputStream, ByteBuffer>() {
+
+        @Override
+        public void accept(OutputStream out, ByteBuffer bb) throws Exception {
+            out.write(Util.toBytes(bb));
+        }
+    };
+
+    public static BiConsumer<OutputStream, ByteBuffer> defaultWriter() {
+        return writer;
     }
 
     public static long toLong(byte[] b) {
@@ -76,8 +90,8 @@ public final class Util {
         byte[] b = new byte[8];
         readFully(in, b, 0, 8);
         return (((long) b[0] << 56) + ((long) (b[1] & 255) << 48) + ((long) (b[2] & 255) << 40)
-                + ((long) (b[3] & 255) << 32) + ((long) (b[4] & 255) << 24) + ((b[5] & 255) << 16) + ((b[6] & 255) << 8)
-                + ((b[7] & 255) << 0));
+                + ((long) (b[3] & 255) << 32) + ((long) (b[4] & 255) << 24) + ((b[5] & 255) << 16)
+                + ((b[6] & 255) << 8) + ((b[7] & 255) << 0));
     }
 
     public static int readInt(InputStream in) throws IOException {
