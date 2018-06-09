@@ -88,6 +88,16 @@ Authenticator.setDefault(authenticator);
 
 The unit test [`ClientSslTest.java`](src/test/java/org/davidmoten/rx2/io/ClientSslTest.java) has a round-trip test using Jetty, TLS 1.2, keystore, truststore and basic authentication. Check it out if you are having trouble.  
 
+Here's an example:
+
+```java
+Observable<Integer> numbers = 
+  Client.get("https://localhost:8443")
+    .sslContext(sslContext)
+    .basicAuth(username, password)
+    .build();
+```
+
 ### Serializers
 
 `Serializer.javaIo()` can be used to serialize classes that implement `Serializable`. It is much slower than products like *Kryo* or indeed if you have the time, custom serialization.
