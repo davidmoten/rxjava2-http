@@ -230,4 +230,20 @@ Throughput drops considerably for smaller byte arrays (because of overhead per a
 | 64K | 1300 |
 | 128K | 1340 |
 
+### Server-specific optimizations
 
+When a `ByteBuffer` on the server-side is written to the `ServletOutputStream` there are server-specific optimizations that can be made. For instance if the `ByteBuffer` from a memory mapped file and the server is Jetty 9 then the bytes don't need to be copied into the JVM process but can be transferred directly to the network channel by the operating system. Here's an example servlet using such an optimization (using the `writerFactory` builder method in `Response`):
+
+```java
+public class OptimizedJettyWriterServlet extends FlowableHttpServlet {
+
+    @Override
+    public Response respond(HttpServletRequest req) {
+        return Response //
+                .publisher(flowable) //
+                .writerFactory(OptimizedJettyWriterFactory.INSTANCE) //
+                .build();
+    }
+}
+```
+See [OptimizedJettyWriterFactory.java](src/test/java/org/davidmoten/rx2/http/OptimizedJettyWriterFactory.java) where you'll notice that the `ServletOutputStream` is cast to a `HttpOutput` which supports writing of `ByteBuffer`s directly.
