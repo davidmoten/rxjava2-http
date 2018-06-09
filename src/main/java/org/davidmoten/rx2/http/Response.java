@@ -1,13 +1,11 @@
 package org.davidmoten.rx2.http;
 
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import org.davidmoten.rx2.io.internal.Util;
+import org.davidmoten.rx2.io.WriterFactory;
 import org.reactivestreams.Publisher;
 
 import io.reactivex.Scheduler;
-import io.reactivex.functions.BiConsumer;
 import io.reactivex.schedulers.Schedulers;
 
 public class Response {
@@ -18,22 +16,22 @@ public class Response {
 
     private final boolean async;
 
-    private final BiConsumer<? super OutputStream, ? super ByteBuffer> writer;
+    private final WriterFactory writerFactory;
 
     Response(Publisher<? extends ByteBuffer> publisher, Scheduler requestScheduler, boolean async,
-            BiConsumer<? super OutputStream, ? super ByteBuffer> writer) {
+            WriterFactory writerFactory) {
         this.publisher = publisher;
         this.requestScheduler = requestScheduler;
         this.async = async;
-        this.writer = writer;
+        this.writerFactory = writerFactory;
     }
 
     public Publisher<? extends ByteBuffer> publisher() {
         return publisher;
     }
 
-    public BiConsumer<? super OutputStream, ? super ByteBuffer> writer() {
-        return writer;
+    public WriterFactory writerFactory() {
+        return writerFactory;
     }
 
     public Scheduler requestScheduler() {
@@ -60,7 +58,7 @@ public class Response {
         private final Publisher<? extends ByteBuffer> publisher;
         private Scheduler requestScheduler = Schedulers.io();
         private boolean async = true;
-        private BiConsumer<? super OutputStream, ? super ByteBuffer> writer = Util.defaultWriter();
+        private WriterFactory writerFactory = WriterFactory.DEFAULT;
 
         Builder(Publisher<? extends ByteBuffer> publisher) {
             this.publisher = publisher;
@@ -84,13 +82,13 @@ public class Response {
             return async(false);
         }
 
-        public Builder writer(BiConsumer<? super OutputStream, ? super ByteBuffer> writer) {
-            this.writer = writer;
+        public Builder writerFactory(WriterFactory writerFactory) {
+            this.writerFactory = writerFactory;
             return this;
         }
 
         public Response build() {
-            return new Response(publisher, requestScheduler, async, writer);
+            return new Response(publisher, requestScheduler, async, writerFactory);
         }
     }
 

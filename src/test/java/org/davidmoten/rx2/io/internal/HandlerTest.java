@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.davidmoten.rx2.io.WriterFactory;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
@@ -28,7 +29,7 @@ public class HandlerTest {
         Flowable<ByteBuffer> f = Flowable.just(ByteBuffer.wrap(new byte[] { 12 }));
         AtomicReference<Subscription> subscription = new AtomicReference<Subscription>();
         Consumer<Subscription> consumer = sub -> subscription.set(sub);
-        Server.handle(f, Single.just(out), DO_NOTHING, 2, Schedulers.trampoline(), consumer, Util.defaultWriter());
+        Server.handle(f, Single.just(out), DO_NOTHING, 2, Schedulers.trampoline(), consumer, WriterFactory.DEFAULT);
         subscription.get().request(1);
         System.out.println(Arrays.toString(out.toByteArray()));
         assertArrayEquals(new byte[] { 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 12, -128, 0, 0, 0 }, // id=2,length=1,byte=12
@@ -44,7 +45,7 @@ public class HandlerTest {
         AtomicReference<Subscription> subscription = new AtomicReference<Subscription>();
         Consumer<Subscription> consumer = sub -> subscription.set(sub);
         long id = 2;
-        Server.handle(f, Single.just(out), DO_NOTHING, id, Schedulers.trampoline(), consumer, Util.defaultWriter());
+        Server.handle(f, Single.just(out), DO_NOTHING, id, Schedulers.trampoline(), consumer, WriterFactory.DEFAULT);
         ByteArrayOutputStream expected = new ByteArrayOutputStream();
         expected.write(Util.toBytes(id));
         expected.write(Util.toBytes(-exBytes.length));

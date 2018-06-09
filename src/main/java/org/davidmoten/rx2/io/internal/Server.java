@@ -7,6 +7,8 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.davidmoten.rx2.io.Writer;
+import org.davidmoten.rx2.io.WriterFactory;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -18,7 +20,6 @@ import io.reactivex.Scheduler.Worker;
 import io.reactivex.SingleObserver;
 import io.reactivex.SingleSource;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.BiConsumer;
 import io.reactivex.functions.Consumer;
 import io.reactivex.internal.fuseable.SimplePlainQueue;
 import io.reactivex.internal.queue.SpscLinkedArrayQueue;
@@ -33,11 +34,11 @@ public final class Server {
     public static void handle(Publisher<? extends ByteBuffer> flowable,
             SingleSource<OutputStream> out, Runnable completion, long id,
             Scheduler requestScheduler, Consumer<Subscription> subscription,
-            BiConsumer<? super OutputStream, ? super ByteBuffer> writer) {
+            WriterFactory writerFactory) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
         HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id, requestScheduler,
-                writer);
+                writerFactory);
         try {
             subscription.accept(subscriber);
         } catch (Exception e) {
@@ -58,21 +59,21 @@ public final class Server {
         private final Runnable completion;
         private final long id;
         private final Worker worker;
-        private final BiConsumer<? super OutputStream, ? super ByteBuffer> writer;
+        private final WriterFactory writerFactory;
         private Subscription parent;
         private SimplePlainQueue<ByteBuffer> queue;
         private volatile boolean finished;
         private Throwable error;
         private volatile boolean cancelled;
         private Disposable disposable;
+        private Writer writer;
 
         HandlerSubscriber(SingleSource<OutputStream> outSource, Runnable completion, long id,
-                Scheduler requestScheduler,
-                BiConsumer<? super OutputStream, ? super ByteBuffer> writer) {
+                Scheduler requestScheduler, WriterFactory writerFactory) {
             this.outSource = outSource;
             this.completion = completion;
             this.id = id;
-            this.writer = writer;
+            this.writerFactory = writerFactory;
             this.worker = requestScheduler.createWorker();
             this.queue = new SpscLinkedArrayQueue<>(16);
         }
@@ -95,6 +96,7 @@ public final class Server {
         public void onSuccess(OutputStream os) {
             this.out = os;
             try {
+                writer = writerFactory.createWriter(os);
                 out.write(Util.toBytes(id));
                 out.flush();
             } catch (IOException e) {
@@ -240,11 +242,7 @@ public final class Server {
                 firstOnNext = false;
             }
             writeInt(out, bb.remaining());
-            try {
-                writer.accept(out, bb);
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
+            writer.write(bb);
             out.flush();
         }
     }

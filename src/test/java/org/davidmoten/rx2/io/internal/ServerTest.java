@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.davidmoten.rx2.io.WriterFactory;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
@@ -18,7 +19,7 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 public class ServerTest {
-    
+
     @Test
     public void isUtilityClass() {
         Asserts.assertIsUtilityClass(Server.class);
@@ -35,7 +36,7 @@ public class ServerTest {
         Consumer<Subscription> consumer = sub -> {
         };
         Server.handle(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })), Single.just(out), () -> {
-        }, 123, Schedulers.trampoline(), consumer, Util.defaultWriter()); //
+        }, 123, Schedulers.trampoline(), consumer, WriterFactory.DEFAULT); //
     }
 
     @Test
@@ -52,7 +53,7 @@ public class ServerTest {
         try {
             Server.handle(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })), Single.just(out),
                     () -> {
-                    }, 123, Schedulers.trampoline(), consumer, Util.defaultWriter()); //
+                    }, 123, Schedulers.trampoline(), consumer, WriterFactory.DEFAULT); //
         } catch (RuntimeException e) {
             Assert.assertEquals("subscription consumer threw", e.getMessage());
         }
@@ -80,10 +81,8 @@ public class ServerTest {
         Consumer<Subscription> consumer = sub -> {
             subscription.set(sub);
         };
-        Server.handle(
-                Flowable.just(ByteBuffer.wrap(new byte[] { 1 })),
-                Single.just(out), () -> {
-                }, 123, Schedulers.trampoline(), consumer, Util.defaultWriter()); //
+        Server.handle(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })), Single.just(out), () -> {
+        }, 123, Schedulers.trampoline(), consumer, WriterFactory.DEFAULT); //
         subscription.get().request(100);
     }
 }
