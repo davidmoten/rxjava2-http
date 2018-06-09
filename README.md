@@ -5,7 +5,7 @@
 
 Transmit RxJava2 Flowable over http (with non-blocking backpressure).
 
-Status: *pre-alpha* (in development)
+Status: *pre-alpha* (in development). First release scheduled for late June 2018.
 
 ## Features
 * Apply non-blocking backpressure to streams over networks
@@ -87,6 +87,16 @@ Authenticator.setDefault(authenticator);
 ### SSL/TLS
 
 The unit test [`ClientSslTest.java`](src/test/java/org/davidmoten/rx2/io/ClientSslTest.java) has a round-trip test using Jetty, TLS 1.2, keystore, truststore and basic authentication. Check it out if you are having trouble.  
+
+Here's an example:
+
+```java
+Flowable<Integer> numbers = 
+  Client.get("https://localhost:8443")
+    .sslContext(sslContext)
+    .basicAuth(username, password)
+    .build();
+```
 
 ### Serializers
 
