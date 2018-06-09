@@ -6,10 +6,9 @@ import javax.servlet.http.HttpServletRequest;
 import org.davidmoten.rx2.http.FlowableHttpServlet;
 import org.davidmoten.rx2.http.Response;
 
+@SuppressWarnings("serial")
 @WebServlet
 public final class HandlerServletFactoryThrows extends FlowableHttpServlet {
-
-    private static final long serialVersionUID = 4294026368929063494L;
 
     @Override
     public Response respond(HttpServletRequest req) {

@@ -11,10 +11,9 @@ import org.davidmoten.rx2.http.Response;
 import io.reactivex.Flowable;
 import io.reactivex.schedulers.Schedulers;
 
+@SuppressWarnings("serial")
 @WebServlet
 public final class HandlerServletSync extends FlowableHttpServlet {
-
-    private static final long serialVersionUID = 4294026368929063494L;
 
     public static Flowable<ByteBuffer> flowable = Flowable.empty();
 
