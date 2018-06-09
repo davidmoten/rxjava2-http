@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
@@ -13,14 +14,17 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.davidmoten.rx2.http.Response;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
 import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 
+import io.reactivex.Flowable;
 import io.reactivex.Scheduler;
 import io.reactivex.Single;
 import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 public final class ServletHandler {
 
@@ -35,22 +39,31 @@ public final class ServletHandler {
     private ServletHandler() {
     }
 
-    public void doGet(Publisher<? extends ByteBuffer> publisher, HttpServletRequest req,
-            HttpServletResponse resp, Scheduler requestScheduler, boolean async)
-            throws ServletException, IOException {
+    public void doGet(Callable<Response> responseProvider, HttpServletRequest req,
+            HttpServletResponse resp) throws ServletException, IOException {
         String idString = req.getParameter("id");
         if (idString == null) {
             final long r = getRequest(req);
             resp.setContentType("application/octet-stream");
-            if (!async || !req.isAsyncSupported()) {
-                handleStreamBlocking(publisher, resp.getOutputStream(), requestScheduler, r);
+            Response response;
+            try {
+                response = responseProvider.call();
+            } catch (Throwable e) {
+                // default to blocking
+                handleStreamBlocking(Flowable.error(e), resp.getOutputStream(), Schedulers.io(), r);
+                return;
+            }
+            if (!response.isAsync() || !req.isAsyncSupported()) {
+                handleStreamBlocking(response.publisher(), resp.getOutputStream(),
+                        response.requestScheduler(), r);
             } else {
                 AsyncContext asyncContext = req.startAsync();
                 // prevent timeout because streams can be long-running
                 // TODO make configurable?
                 asyncContext.setTimeout(0);
-                handleStreamNonBlocking(publisher, asyncContext.getResponse().getOutputStream(),
-                        requestScheduler, r, asyncContext);
+                handleStreamNonBlocking(response.publisher(),
+                        asyncContext.getResponse().getOutputStream(), response.requestScheduler(),
+                        r, asyncContext);
             }
         } else {
             long id = Long.parseLong(idString);
