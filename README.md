@@ -91,7 +91,7 @@ The unit test [`ClientSslTest.java`](src/test/java/org/davidmoten/rx2/io/ClientS
 Here's an example:
 
 ```java
-Observable<Integer> numbers = 
+Flowable<Integer> numbers = 
   Client.get("https://localhost:8443")
     .sslContext(sslContext)
     .basicAuth(username, password)
