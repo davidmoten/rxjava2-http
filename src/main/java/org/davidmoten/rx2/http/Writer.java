@@ -15,6 +15,10 @@ public interface Writer {
     public void flush() throws IOException;
 
     public void close() throws IOException;
+    
+    public default void afterOnNext(int numBytes) throws IOException {
+        flush();
+    };
 
     public default void write(byte[] buffer, int offset, int length) throws IOException {
         int to = offset + length;
@@ -54,6 +58,12 @@ public interface Writer {
             public void close() throws IOException {
                 out.close();
             }
+
+            @Override
+            public void afterOnNext(int numBytes) throws IOException {
+                flush();
+            }
+            
         };
     }
 

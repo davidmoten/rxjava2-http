@@ -240,7 +240,7 @@ public final class Server {
             }
             writeInt(writer, bb.remaining());
             writer.write(bb);
-            writer.flush();
+            writer.afterOnNext(bb.remaining());
         }
 
     }

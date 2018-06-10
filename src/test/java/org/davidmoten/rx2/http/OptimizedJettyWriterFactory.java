@@ -46,6 +46,7 @@ public final class OptimizedJettyWriterFactory implements WriterFactory {
             public void close() throws IOException {
                 out.close();
             }
+            
         };
     }
 
