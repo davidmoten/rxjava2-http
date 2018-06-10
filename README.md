@@ -247,3 +247,6 @@ public class OptimizedJettyWriterServlet extends FlowableHttpServlet {
 }
 ```
 See [OptimizedJettyWriterFactory.java](src/test/java/org/davidmoten/rx2/http/OptimizedJettyWriterFactory.java) where you'll notice that the `ServletOutputStream` is cast to a `HttpOutput` which supports writing of `ByteBuffer`s directly.
+
+## Stream-specific optimisations
+Another way of optimizing throughput is by flushing the `ServletOutputStream` less often. This is achieved by overriding the behaviour of `Writer.afterOnNext` whose default behaviour is to `flush` the `OutputStream`. You might choose to flush every N items or perhaps after N bytes. 
