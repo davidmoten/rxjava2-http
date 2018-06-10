@@ -240,7 +240,7 @@ public final class Client {
         }
 
         /**
-         * Returns the built {@link Flowable<ByteBuffer>} based on all the builder
+         * Returns the built {@code Flowable<ByteBuffer>} based on all the builder
          * options specified.
          * 
          * @return the built Flowable.
