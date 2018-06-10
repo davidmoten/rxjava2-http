@@ -55,7 +55,6 @@ public final class Server {
         private static final long serialVersionUID = 1331107616659478552L;
 
         private final SingleSource<OutputStream> outSource;
-        private OutputStream out;
         private final Runnable completion;
         private final long id;
         private final Worker worker;
@@ -94,11 +93,10 @@ public final class Server {
 
         @Override
         public void onSuccess(OutputStream os) {
-            this.out = os;
             try {
                 writer = writerFactory.createWriter(os);
-                out.write(Util.toBytes(id));
-                out.flush();
+                writer.write(Util.toBytes(id));
+                writer.flush();
             } catch (IOException e) {
                 error = e;
                 finished = true;
@@ -205,9 +203,8 @@ public final class Server {
             log.debug("server: onComplete");
             try {
                 // send the bytes -128, 0, 0, 0 to indicate completion
-                writeInt(out, Integer.MIN_VALUE);
-                out.flush();
-                // System.out.println("complete sent for " + id);
+                writeInt(writer, Integer.MIN_VALUE);
+                writer.flush();
             } catch (IOException e) {
                 RxJavaPlugins.onError(e);
             }
@@ -222,9 +219,9 @@ public final class Server {
                 bytes.close();
 
                 // mark as error by reporting length as negative
-                writeInt(out, -bytes.size());
-                bytes.write(out);
-                out.flush();
+                writeInt(writer, -bytes.size());
+                writer.write(bytes.buffer(), 0, bytes.size());
+                writer.flush();
             } catch (IOException e) {
                 // cancellation will close the OutputStream
                 // so we won't report that
@@ -241,17 +238,18 @@ public final class Server {
                 log.debug("server: first onNext");
                 firstOnNext = false;
             }
-            writeInt(out, bb.remaining());
+            writeInt(writer, bb.remaining());
             writer.write(bb);
-            out.flush();
+            writer.flush();
         }
+
     }
 
-    private static void writeInt(OutputStream out, int v) throws IOException {
-        out.write((v >>> 24) & 0xFF);
-        out.write((v >>> 16) & 0xFF);
-        out.write((v >>> 8) & 0xFF);
-        out.write((v >>> 0) & 0xFF);
+    private static void writeInt(Writer writer, int v) throws IOException {
+        writer.write((v >>> 24) & 0xFF);
+        writer.write((v >>> 16) & 0xFF);
+        writer.write((v >>> 8) & 0xFF);
+        writer.write((v >>> 0) & 0xFF);
     }
 
 }
