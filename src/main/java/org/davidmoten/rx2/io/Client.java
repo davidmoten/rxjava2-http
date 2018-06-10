@@ -229,7 +229,7 @@ public final class Client {
 
         /**
          * Returns the {@link Flowable} where deserialization is performed by
-         * {@link Serializer.javaIo()}.
+         * {@link Serializer#javaIo()}.
          * 
          * @param <T>
          *            the Flowable result type
