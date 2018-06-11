@@ -353,7 +353,7 @@
                                         <argument>-wi</argument>
                                         <argument>4</argument>
                                         <argument>-jvmArgs</argument>
-                                        <argument>-Xmx128m</argument>
+                                        <argument>-Xmx512m</argument>
                                     </arguments>
                                 </configuration>
                             </execution>
