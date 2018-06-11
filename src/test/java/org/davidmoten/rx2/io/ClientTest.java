@@ -549,6 +549,36 @@ public class ClientTest {
         }
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testClientNegativeTimeoutThrows() {
+        Client.get("http://blah").connectTimeoutMs(-1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testClientNegativeReadTimeoutThrows() {
+        Client.get("http://blah").readTimeoutMs(-1);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testClientProxyNullThrows() {
+        Client.get("http://blah").proxy(null);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testClientProxyNullHostThrows() {
+        Client.get("http://blah").proxy(null, 8080);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testClientProxyNegativePortThrows() {
+        Client.get("http://blah").proxy("proxy", -1);
+    }
+
+    @Test
+    public void testClientValidProxyDoesNotThrow() {
+        Client.get("http://blah").proxy("proxy", 8080);
+    }
+
     @Test
     public void testRequesterNon200ResponseCode() throws Exception {
         Requester r = new Client.Requester("http://localhost/doesNotExist",
