@@ -77,8 +77,8 @@ Note that if you need proxy authentication as well then use System properties or
 ```java
 Authenticator authenticator = new Authenticator() {
     public PasswordAuthentication getPasswordAuthentication() {
-        return (new PasswordAuthentication("user",
-                "password".toCharArray()));
+      return (new PasswordAuthentication("user",
+        "password".toCharArray()));
     }
 };
 Authenticator.setDefault(authenticator);
@@ -230,8 +230,8 @@ Throughput drops considerably for smaller byte arrays (because of overhead per a
 | 64K | 1300 |
 | 128K | 1340 |
 
-## Request patterns and flushing
-Batching requests to balance backpressure and throughput is best tuned with benchmarks. Another aspect you can control is the flushing behaviour of the server. As items are received by the server flowable for publishing across the network to the client flowable each item is by default flushed to the `ServletOutputStream` so that the client gets it immediately instead of waiting for a buffer of bytes to be filled and then sent across. The flushing behaviour can be tuned in the servlet using the `Response` builder methods `autoFlush`, `flushAfterItems` and `flushAfterBytes`. You can specify both items count and byte count threshold at the same time. Here's an example:
+### Request patterns and flushing
+Batching requests to balance backpressure and throughput is best tuned with benchmarking. Another aspect you can control is the flushing behaviour of the server. As items are received by the server flowable for publishing across the network to the client flowable each item is by default flushed to the `ServletOutputStream` so that the client gets it immediately instead of waiting for a buffer of bytes to be filled and then sent across. The flushing behaviour can be tuned in the servlet using the `Response` builder methods `autoFlush`, `flushAfterItems` and `flushAfterBytes`. You can specify both items count and byte count threshold at the same time. Here's an example:
 
 ```java
 @WebServlet
@@ -260,14 +260,13 @@ public class OptimizedJettyWriterServlet extends FlowableHttpServlet {
 
     @Override
     public Response respond(HttpServletRequest req) {
-        return Response //
-                .publisher(flowable) //
-                .writerFactory(OptimizedJettyWriterFactory.INSTANCE) //
-                .build();
+      return Response //
+        .publisher(flowable) //
+        .writerFactory(OptimizedJettyWriterFactory.INSTANCE) //
+        .build();
     }
 }
 ```
 See [OptimizedJettyWriterFactory.java](src/test/java/org/davidmoten/rx2/http/OptimizedJettyWriterFactory.java) where you'll notice that the `ServletOutputStream` is cast to a `HttpOutput` which supports writing of `ByteBuffer`s directly.
 
-## Stream-specific optimisations
-Another way of optimizing throughput is by flushing the `ServletOutputStream` less often. This is achieved by overriding the behaviour of `Writer.afterOnNext` whose default behaviour is to `flush` the `OutputStream`. You might choose to flush every N items or perhaps after N bytes. 
+
