@@ -239,10 +239,10 @@ public final class HandlerServletAsync extends FlowableHttpServlet {
 
     @Override
     public Response respond(HttpServletRequest req) {
-      return Response // 
-        .publisher(flowable) //
-        .flushAfterItems(10) //
-        .flushAfterBytes(8192) //
+      return Response 
+        .publisher(flowable)
+        .flushAfterItems(10)
+        .flushAfterBytes(8192)
         .build();
     }
 }
