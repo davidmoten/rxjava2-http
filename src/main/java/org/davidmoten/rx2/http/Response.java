@@ -66,7 +66,7 @@ public class Response {
         private Scheduler requestScheduler = Schedulers.io();
         private boolean async = true;
         private WriterFactory writerFactory = WriterFactory.DEFAULT;
-        private int flushAfterItems;
+        private int flushAfterItems = 1;
         private int flushAfterBytes;
 
         Builder(Publisher<? extends ByteBuffer> publisher) {
