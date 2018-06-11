@@ -230,6 +230,25 @@ Throughput drops considerably for smaller byte arrays (because of overhead per a
 | 64K | 1300 |
 | 128K | 1340 |
 
+## Request patterns and flushing
+Batching requests to balance backpressure and throughput is best tuned with benchmarks. Another aspect you can control is the flushing behaviour of the server. As items are received by the server flowable for publishing across the network to the client flowable each item is by default flushed to the `ServletOutputStream` so that the client gets it immediately instead of waiting for a buffer of bytes to be filled and then sent across. The flushing behaviour can be tuned in the servlet using the `Response` builder methods `autoFlush`, `flushAfterItems` and `flushAfterBytes`. You can specify both and items count and byte count threshold at the same time. Here's an example:
+
+```java
+@WebServlet
+public final class HandlerServletAsync extends FlowableHttpServlet {
+
+    @Override
+    public Response respond(HttpServletRequest req) {
+        return Response //
+		    .publisher(flowable) //
+		    .flushAfterItems(10) //
+		    .flushAfterBytes(8192) //
+		    .build();
+    }
+}
+
+```
+
 ### Server-specific optimizations
 
 When a `ByteBuffer` on the server-side is written to the `ServletOutputStream` there are server-specific optimizations that can be made. For instance if the `ByteBuffer` from a memory mapped file and the server is Jetty 9 then the bytes don't need to be copied into the JVM process but can be transferred directly to the network channel by the operating system. Here's an example servlet using such an optimization (using the `writerFactory` builder method in `Response`):
