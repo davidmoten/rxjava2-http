@@ -66,7 +66,8 @@ public class Response {
         private Scheduler requestScheduler = Schedulers.io();
         private boolean async = true;
         private WriterFactory writerFactory = WriterFactory.DEFAULT;
-        private AfterOnNextFactory afterOnNextFactory = AfterOnNextFactory.DEFAULT;
+        private int flushAfterItems;
+        private int flushAfterBytes;
 
         Builder(Publisher<? extends ByteBuffer> publisher) {
             this.publisher = publisher;
@@ -101,28 +102,24 @@ public class Response {
          * @return this
          */
         public Builder autoFlush() {
-            this.afterOnNextFactory = AfterOnNextFactory.flushAfter(0, 0);
+            flushAfterItems = 0;
+            flushAfterBytes = 0;
             return this;
         }
 
         public Builder flushAfterItems(int numItems) {
-            this.afterOnNextFactory = AfterOnNextFactory.flushAfter(numItems, 0);
+            this.flushAfterItems = numItems;
             return this;
         }
 
         public Builder flushAfterBytes(int numBytes) {
-            this.afterOnNextFactory = AfterOnNextFactory.flushAfter(0, numBytes);
-            return this;
-        }
-
-        public Builder flushAfter(int numItems, int numBytes) {
-            this.afterOnNextFactory = AfterOnNextFactory.flushAfter(numItems, numBytes);
+            this.flushAfterBytes = numBytes;
             return this;
         }
 
         public Response build() {
             return new Response(publisher, requestScheduler, async, writerFactory,
-                    afterOnNextFactory);
+                    AfterOnNextFactory.flushAfter(flushAfterItems, flushAfterBytes));
         }
     }
 
