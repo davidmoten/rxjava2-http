@@ -578,6 +578,17 @@ public class ClientTest {
     public void testClientValidProxyDoesNotThrow() {
         Client.get("http://blah").proxy("proxy", 8080);
     }
+    
+    @Test(expected = NullPointerException.class)
+    public void testRequestHeaderNullThrows() {
+        Client.get("http://blah").requestHeader(null, "a");
+    }
+    
+    @Test(expected = NullPointerException.class)
+    public void testRequestHeaderNullValueThrows() {
+        Client.get("http://blah").requestHeader("a", null);
+    }
+
 
     @Test
     public void testRequesterNon200ResponseCode() throws Exception {
