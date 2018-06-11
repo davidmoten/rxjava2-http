@@ -20,7 +20,6 @@ import io.reactivex.Flowable;
 public class Benchmarks {
 
     private static final int TOTAL_BYTES = 64 * 1024 * 1024;
-    private static final int BYTES_PER_ITEM = 1024;
 
     @State(Scope.Thread)
     public static class ServerHolder {
@@ -28,10 +27,18 @@ public class Benchmarks {
         public Server server = null;
 
         @Param({ "2", "8", "32", "128", "512", "2048", "8192", "32768", "65536", "131072" })
-        int bytesPerItem;
+        public int bytesPerItem = 32768;
+
+        public int batchSize;
+
+        public int numItems;
 
         @Setup
         public void setup() throws Exception {
+            batchSize = Math.max(TOTAL_BYTES / bytesPerItem / 1024, 4);
+            numItems = TOTAL_BYTES / bytesPerItem;
+            System.out.println("bytesPerItem=" + bytesPerItem + ", batchSize=" + batchSize
+                    + ", numItems=" + numItems);
             server = Servers.createServerAsync(
                     Flowable.just(ByteBuffer.wrap(new byte[bytesPerItem])).repeat());
             server.start();
@@ -51,8 +58,8 @@ public class Benchmarks {
         return Client //
                 .get("http://localhost:" + port(holder.server)) //
                 .build() //
-                .rebatchRequests(Math.max(TOTAL_BYTES / BYTES_PER_ITEM / 1024, 1)) //
-                .take(TOTAL_BYTES / BYTES_PER_ITEM) //
+                .rebatchRequests(holder.batchSize) //
+                .take(holder.numItems) //
                 .count() //
                 .blockingGet();
     }
