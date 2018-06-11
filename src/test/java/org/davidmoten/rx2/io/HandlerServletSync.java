@@ -22,7 +22,7 @@ public final class HandlerServletSync extends FlowableHttpServlet {
         return Response //
                 .publisher(flowable) //
                 .requestScheduler(Schedulers.io()) //
-                .sync() //
+                .async(false) //
                 .build();
     }
 

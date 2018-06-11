@@ -55,8 +55,11 @@ public class Response {
 
     public static Response from(Publisher<? extends ByteBuffer> publisher) {
         return publisher(publisher) //
-                .async(true) //
+                .async() //
                 .requestScheduler(Schedulers.io()) //
+                .writerFactory(WriterFactory.DEFAULT) //
+                .flushAfterItems(1) //
+                .flushAfterBytes(0) //
                 .build();
     }
 
@@ -85,10 +88,6 @@ public class Response {
         public Builder async(boolean async) {
             this.async = async;
             return this;
-        }
-
-        public Builder sync() {
-            return async(false);
         }
 
         public Builder writerFactory(WriterFactory writerFactory) {
