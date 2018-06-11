@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.davidmoten.rx2.http.Writer;
 import org.davidmoten.rx2.http.WriterFactory;
@@ -23,6 +24,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.internal.fuseable.SimplePlainQueue;
 import io.reactivex.internal.queue.SpscLinkedArrayQueue;
+import io.reactivex.internal.util.BackpressureHelper;
 import io.reactivex.plugins.RxJavaPlugins;
 
 public final class Server {
@@ -67,10 +69,11 @@ public final class Server {
         private volatile boolean cancelled;
         private Disposable disposable;
         private Writer writer;
+        private final AtomicLong requested = new AtomicLong();
+        private long emitted;
 
         HandlerSubscriber(SingleSource<OutputStream> outSource, Runnable completion, long id,
-                Scheduler requestScheduler, WriterFactory writerFactory,
-                AfterOnNext afterOnNext) {
+                Scheduler requestScheduler, WriterFactory writerFactory, AfterOnNext afterOnNext) {
             this.outSource = outSource;
             this.completion = completion;
             this.id = id;
@@ -110,6 +113,7 @@ public final class Server {
         @Override
         public void request(long n) {
             log.debug("server request id={}, n={}", id, n);
+            BackpressureHelper.add(requested, n);
             worker.schedule(() -> {
                 parent.request(n);
                 drain();
@@ -149,6 +153,8 @@ public final class Server {
             if (getAndIncrement() == 0) {
                 int missed = 1;
                 while (true) {
+                    long r = requested.get();
+                    long e = emitted;
                     while (true) {
                         if (cancelled) {
                             parent.cancel();
@@ -162,13 +168,14 @@ public final class Server {
                         ByteBuffer bb = queue.poll();
                         if (bb != null) {
                             try {
-                                writeOnNext(bb);
-                            } catch (Throwable e) {
+                                e++;
+                                writeOnNext(bb, e == r);
+                            } catch (Throwable ex) {
                                 parent.cancel();
                                 queue.clear();
                                 worker.dispose();
                                 if (!cancelled) {
-                                    writeError(e);
+                                    writeError(ex);
                                 }
                                 completion.run();
                                 return;
@@ -194,6 +201,7 @@ public final class Server {
                             break;
                         }
                     }
+                    emitted = e;
                     missed = addAndGet(-missed);
                     if (missed == 0) {
                         return;
@@ -236,14 +244,14 @@ public final class Server {
 
         boolean firstOnNext = true;
 
-        private void writeOnNext(ByteBuffer bb) throws IOException {
+        private void writeOnNext(ByteBuffer bb, boolean emittedEqualsRequested) throws IOException {
             if (firstOnNext) {
                 log.debug("server: first onNext");
                 firstOnNext = false;
             }
             writeInt(writer, bb.remaining());
             writer.write(bb);
-            if (afterOnNext.shouldFlush(bb.remaining())) {
+            if (emittedEqualsRequested || afterOnNext.shouldFlush(bb.remaining())) {
                 writer.flush();
             }
         }

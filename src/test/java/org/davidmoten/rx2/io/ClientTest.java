@@ -391,7 +391,7 @@ public class ClientTest {
                 .doOnCancel(() -> cancelled.set(true));
         Server server = createServerAsync(flowable);
         try {
-            TestSubscriber<Integer> ts = get(server) // s
+            TestSubscriber<Integer> ts = get(server) //
                     .<Integer>deserialized() //
                     .test(0);
             Thread.sleep(300);
