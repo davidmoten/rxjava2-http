@@ -249,6 +249,8 @@ public final class HandlerServletAsync extends FlowableHttpServlet {
 
 ```
 
+Note that `autoFlush` doesn't do any flushing after `onNext` emissions but relies on the default buffering and flushing behaviour of the servlet. One exception for all the `flush` options that exists to prevent stream stalls under backpressure is that whenever the count of emissions on the server meets the current requested amount a flush is called.
+
 ### Server-specific optimizations
 
 When a `ByteBuffer` on the server-side is written to the `ServletOutputStream` there are server-specific optimizations that can be made. For instance if the `ByteBuffer` from a memory mapped file and the server is Jetty 9 then the bytes don't need to be copied into the JVM process but can be transferred directly to the network channel by the operating system. Here's an example servlet using such an optimization (using the `writerFactory` builder method in `Response`):
