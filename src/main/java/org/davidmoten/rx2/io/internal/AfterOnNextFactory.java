@@ -4,7 +4,7 @@ public interface AfterOnNextFactory {
 
     AfterOnNext create();
 
-    public static final AfterOnNextFactory DEFAULT = flushAfter(1, 0); 
+    public static final AfterOnNextFactory DEFAULT = flushAfter(0, 0); 
     
     public static AfterOnNextFactory flushAfter(int numItems, int numBytes) {
         return new AfterOnNextFactory() {
