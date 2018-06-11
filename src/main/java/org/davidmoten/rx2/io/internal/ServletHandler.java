@@ -52,12 +52,12 @@ public final class ServletHandler {
             } catch (Throwable e) {
                 // default to blocking
                 handleStreamBlocking(Flowable.error(e), resp.getOutputStream(), Schedulers.io(), r,
-                        WriterFactory.DEFAULT);
+                        WriterFactory.DEFAULT, AfterOnNextFactory.DEFAULT);
                 return;
             }
             if (!response.isAsync() || !req.isAsyncSupported()) {
                 handleStreamBlocking(response.publisher(), resp.getOutputStream(),
-                        response.requestScheduler(), r, response.writerFactory());
+                        response.requestScheduler(), r, response.writerFactory(), response.afterOnNextFactory());
             } else {
                 AsyncContext asyncContext = req.startAsync();
                 // prevent timeout because streams can be long-running
@@ -65,7 +65,7 @@ public final class ServletHandler {
                 asyncContext.setTimeout(0);
                 handleStreamNonBlocking(response.publisher(),
                         asyncContext.getResponse().getOutputStream(), response.requestScheduler(),
-                        r, asyncContext, response.writerFactory());
+                        r, asyncContext, response.writerFactory(), response.afterOnNextFactory());
             }
         } else {
             long id = Long.parseLong(idString);
@@ -75,15 +75,16 @@ public final class ServletHandler {
     }
 
     private void handleStreamBlocking(Publisher<? extends ByteBuffer> publisher, OutputStream out,
-            Scheduler requestScheduler, long request,
-            WriterFactory writerFactory) {
+            Scheduler requestScheduler, long request, WriterFactory writerFactory,
+            AfterOnNextFactory afterOnNextFactory) {
         CountDownLatch latch = new CountDownLatch(1);
         long id = nextId(random);
         Runnable done = () -> {
             map.remove(id);
             latch.countDown();
         };
-        handleStream(publisher, out, requestScheduler, request, id, done, writerFactory);
+        handleStream(publisher, out, requestScheduler, request, id, done, writerFactory,
+                afterOnNextFactory);
         // TODO configure max wait time or allow requester to decide?
         waitFor(latch);
     }
@@ -99,21 +100,22 @@ public final class ServletHandler {
 
     private void handleStreamNonBlocking(Publisher<? extends ByteBuffer> publisher,
             OutputStream out, Scheduler requestScheduler, long request, AsyncContext asyncContext,
-            WriterFactory writerFactory) {
+            WriterFactory writerFactory, AfterOnNextFactory afterOnNextFactory) {
         long id = nextId(random);
         Runnable done = () -> {
             map.remove(id);
             asyncContext.complete();
         };
-        handleStream(publisher, out, requestScheduler, request, id, done, writerFactory);
+        handleStream(publisher, out, requestScheduler, request, id, done, writerFactory,
+                afterOnNextFactory);
     }
 
     private void handleStream(Publisher<? extends ByteBuffer> publisher, OutputStream out,
             Scheduler requestScheduler, long request, long id, Runnable completion,
-            WriterFactory writerFactory) {
+            WriterFactory writerFactory, AfterOnNextFactory afterOnNextFactory) {
         Consumer<Subscription> subscription = sub -> map.put(id, sub);
         Server.handle(publisher, Single.just(out), completion, id, requestScheduler, subscription,
-                writerFactory);
+                writerFactory, afterOnNextFactory);
         if (request > 0) {
             Subscription sub = map.get(id);
             if (sub != null) {

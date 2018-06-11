@@ -34,11 +34,11 @@ public final class Server {
     public static void handle(Publisher<? extends ByteBuffer> flowable,
             SingleSource<OutputStream> out, Runnable completion, long id,
             Scheduler requestScheduler, Consumer<Subscription> subscription,
-            WriterFactory writerFactory) {
+            WriterFactory writerFactory, AfterOnNextFactory afterOnNextFactory) {
         // when first request read (8 bytes) subscribe to Flowable
         // and output to OutputStream on scheduler
         HandlerSubscriber subscriber = new HandlerSubscriber(out, completion, id, requestScheduler,
-                writerFactory);
+                writerFactory, afterOnNextFactory.create());
         try {
             subscription.accept(subscriber);
         } catch (Exception e) {
@@ -59,6 +59,7 @@ public final class Server {
         private final long id;
         private final Worker worker;
         private final WriterFactory writerFactory;
+        private final AfterOnNext afterOnNext;
         private Subscription parent;
         private SimplePlainQueue<ByteBuffer> queue;
         private volatile boolean finished;
@@ -68,13 +69,15 @@ public final class Server {
         private Writer writer;
 
         HandlerSubscriber(SingleSource<OutputStream> outSource, Runnable completion, long id,
-                Scheduler requestScheduler, WriterFactory writerFactory) {
+                Scheduler requestScheduler, WriterFactory writerFactory,
+                AfterOnNext afterOnNext) {
             this.outSource = outSource;
             this.completion = completion;
             this.id = id;
             this.writerFactory = writerFactory;
             this.worker = requestScheduler.createWorker();
             this.queue = new SpscLinkedArrayQueue<>(16);
+            this.afterOnNext = afterOnNext;
         }
 
         @Override
@@ -240,7 +243,9 @@ public final class Server {
             }
             writeInt(writer, bb.remaining());
             writer.write(bb);
-            writer.afterOnNext(bb.remaining());
+            if (afterOnNext.shouldFlush(bb.remaining())) {
+                writer.flush();
+            }
         }
 
     }

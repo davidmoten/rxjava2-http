@@ -36,7 +36,8 @@ public class ServerTest {
         Consumer<Subscription> consumer = sub -> {
         };
         Server.handle(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })), Single.just(out), () -> {
-        }, 123, Schedulers.trampoline(), consumer, WriterFactory.DEFAULT); //
+        }, 123, Schedulers.trampoline(), consumer, WriterFactory.DEFAULT,
+                AfterOnNextFactory.DEFAULT); //
     }
 
     @Test
@@ -53,7 +54,8 @@ public class ServerTest {
         try {
             Server.handle(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })), Single.just(out),
                     () -> {
-                    }, 123, Schedulers.trampoline(), consumer, WriterFactory.DEFAULT); //
+                    }, 123, Schedulers.trampoline(), consumer, WriterFactory.DEFAULT,
+                    AfterOnNextFactory.DEFAULT); //
         } catch (RuntimeException e) {
             Assert.assertEquals("subscription consumer threw", e.getMessage());
         }
@@ -82,7 +84,8 @@ public class ServerTest {
             subscription.set(sub);
         };
         Server.handle(Flowable.just(ByteBuffer.wrap(new byte[] { 1 })), Single.just(out), () -> {
-        }, 123, Schedulers.trampoline(), consumer, WriterFactory.DEFAULT); //
+        }, 123, Schedulers.trampoline(), consumer, WriterFactory.DEFAULT,
+                AfterOnNextFactory.DEFAULT); //
         subscription.get().request(100);
     }
 }
