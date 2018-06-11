@@ -231,7 +231,7 @@ Throughput drops considerably for smaller byte arrays (because of overhead per a
 | 128K | 1340 |
 
 ## Request patterns and flushing
-Batching requests to balance backpressure and throughput is best tuned with benchmarks. Another aspect you can control is the flushing behaviour of the server. As items are received by the server flowable for publishing across the network to the client flowable each item is by default flushed to the `ServletOutputStream` so that the client gets it immediately instead of waiting for a buffer of bytes to be filled and then sent across. The flushing behaviour can be tuned in the servlet using the `Response` builder methods `autoFlush`, `flushAfterItems` and `flushAfterBytes`. You can specify both and items count and byte count threshold at the same time. Here's an example:
+Batching requests to balance backpressure and throughput is best tuned with benchmarks. Another aspect you can control is the flushing behaviour of the server. As items are received by the server flowable for publishing across the network to the client flowable each item is by default flushed to the `ServletOutputStream` so that the client gets it immediately instead of waiting for a buffer of bytes to be filled and then sent across. The flushing behaviour can be tuned in the servlet using the `Response` builder methods `autoFlush`, `flushAfterItems` and `flushAfterBytes`. You can specify both items count and byte count threshold at the same time. Here's an example:
 
 ```java
 @WebServlet
