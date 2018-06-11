@@ -19,6 +19,9 @@ import io.reactivex.Flowable;
 @State(Scope.Benchmark)
 public class Benchmarks {
 
+    private static final int TOTAL_BYTES = 8 * 1024 * 1024;
+    private static final int BYTES_PER_ITEM = 8192 * 8;
+
     @State(Scope.Thread)
     public static class ServerHolder {
 
@@ -26,7 +29,8 @@ public class Benchmarks {
 
         @Setup
         public void setup() throws Exception {
-            server = Servers.createServerAsync(Flowable.just(ByteBuffer.wrap(new byte[8192])).repeat());
+            server = Servers.createServerAsync(
+                    Flowable.just(ByteBuffer.wrap(new byte[8192])).repeat());
             server.start();
         }
 
@@ -45,7 +49,7 @@ public class Benchmarks {
                 .get("http://localhost:" + port(holder.server)) //
                 .build() //
                 .rebatchRequests(16) //
-                .take(1000) //
+                .take(TOTAL_BYTES / BYTES_PER_ITEM) //
                 .count() //
                 .blockingGet();
     }
