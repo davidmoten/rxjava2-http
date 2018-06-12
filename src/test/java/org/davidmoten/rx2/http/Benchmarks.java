@@ -19,15 +19,15 @@ import io.reactivex.Flowable;
 @State(Scope.Benchmark)
 public class Benchmarks {
 
-    private static final int TOTAL_BYTES = 64 * 1024 * 1024;
+    private static final int TOTAL_BYTES = 10 * 1024 * 1024;
 
     @State(Scope.Thread)
     public static class ServerHolder {
 
         public Server server = null;
 
-        @Param({ "2", "8", "32", "128", "512", "2048", "8192", "32768", "65536", "131072" })
-        public int bytesPerItem = 8;
+        // @Param({"128", "512", "2048", "8192", "32768", "65536", "131072" })
+        public int bytesPerItem = 512;
 
         public int batchSize;
 
@@ -37,10 +37,8 @@ public class Benchmarks {
         public void setup() throws Exception {
             batchSize = Math.max(TOTAL_BYTES / bytesPerItem / 1024, 4);
             numItems = TOTAL_BYTES / bytesPerItem;
-            System.out.println("bytesPerItem=" + bytesPerItem + ", batchSize=" + batchSize
-                    + ", numItems=" + numItems);
-            server = Servers.createServerAsync(
-                    Flowable.just(ByteBuffer.wrap(new byte[bytesPerItem])).repeat());
+            System.out.println("bytesPerItem=" + bytesPerItem + ", batchSize=" + batchSize + ", numItems=" + numItems);
+            server = Servers.createServerAsync(Flowable.just(ByteBuffer.wrap(new byte[bytesPerItem])).repeat());
             server.start();
         }
 
@@ -66,5 +64,17 @@ public class Benchmarks {
 
     private static int port(Server server) {
         return ((ServerConnector) server.getConnectors()[0]).getLocalPort();
+    }
+
+    public static void main(String[] args) throws Exception {
+        ServerHolder holder = new ServerHolder();
+        holder.setup();
+        Client //
+                .get("http://localhost:" + port(holder.server)) //
+                .build() //
+                .rebatchRequests(holder.batchSize) //
+                .take(Long.MAX_VALUE) //
+                .count() //
+                .blockingGet();
     }
 }

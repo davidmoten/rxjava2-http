@@ -251,7 +251,7 @@ public final class Server {
             }
             writeInt(writer, bb.remaining());
             writer.write(bb);
-            if (emittedEqualsRequested || afterOnNext.shouldFlush(bb.remaining())) {
+            if (emittedEqualsRequested || afterOnNext.flushRequested(bb.remaining())) {
                 writer.flush();
             }
         }

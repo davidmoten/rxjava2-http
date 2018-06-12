@@ -17,7 +17,7 @@ public interface AfterOnNextFactory {
                     int countBytes;
 
                     @Override
-                    public boolean shouldFlush(int n) {
+                    public boolean flushRequested(int n) {
                         countItems++;
                         countBytes += n;
                         final boolean flush;
