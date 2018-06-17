@@ -165,7 +165,7 @@ Flowable
 ```
 
 ## Design
-WebSockets is a natural for this but can be blocked by corporate firewalls so this library starts with support for HTTP 1.1. 
+WebSockets is a natural for this but can be blocked by corporate firewalls (and can be problematic with HTTP/2) so this library starts with support for HTTP 1.1. 
 
 We want API support for these actions:
 
