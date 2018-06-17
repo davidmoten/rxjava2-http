@@ -31,12 +31,12 @@ public final class Servers {
     public static Server createServerAsync(Flowable<ByteBuffer> flowable) {
         Server server = new Server(0);
         ServletContextHandler context = new ServletContextHandler();
-        ServletHolder defaultServ = new ServletHolder("default", HandlerServletAsync.class);
+        ServletHolder defaultServ = new ServletHolder("default", ServletAsync.class);
         defaultServ.setInitParameter("resourceBase", System.getProperty("user.dir"));
         defaultServ.setInitParameter("dirAllowed", "true");
         context.addServlet(defaultServ, "/");
         server.setHandler(context);
-        HandlerServletAsync.flowable = flowable;
+        ServletAsync.flowable = flowable;
         try {
             server.start();
         } catch (Exception e) {
@@ -102,12 +102,12 @@ public final class Servers {
         security.setLoginService(loginService);
 
         ServletContextHandler context = new ServletContextHandler();
-        ServletHolder defaultServ = new ServletHolder("default", HandlerServletAsync.class);
+        ServletHolder defaultServ = new ServletHolder("default", ServletAsync.class);
         defaultServ.setInitParameter("resourceBase", System.getProperty("user.dir"));
         defaultServ.setInitParameter("dirAllowed", "true");
         context.addServlet(defaultServ, "/");
         security.setHandler(context);
-        HandlerServletAsync.flowable = flowable;
+        ServletAsync.flowable = flowable;
         try {
             server.start();
         } catch (Exception e) {

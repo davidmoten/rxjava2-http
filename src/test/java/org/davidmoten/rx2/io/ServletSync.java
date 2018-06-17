@@ -13,7 +13,7 @@ import io.reactivex.schedulers.Schedulers;
 
 @SuppressWarnings("serial")
 @WebServlet
-public final class HandlerServletSync extends FlowableHttpServlet {
+public final class ServletSync extends FlowableHttpServlet {
 
     public static Flowable<ByteBuffer> flowable = Flowable.empty();
 

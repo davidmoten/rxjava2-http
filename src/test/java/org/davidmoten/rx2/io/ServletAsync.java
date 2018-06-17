@@ -12,7 +12,7 @@ import io.reactivex.Flowable;
 
 @SuppressWarnings("serial")
 @WebServlet
-public final class HandlerServletAsync extends FlowableHttpServlet {
+public final class ServletAsync extends FlowableHttpServlet {
 
     public static Flowable<ByteBuffer> flowable = Flowable.empty();
 

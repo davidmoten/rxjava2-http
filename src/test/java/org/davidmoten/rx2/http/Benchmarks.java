@@ -27,7 +27,7 @@ public class Benchmarks {
         public Server server = null;
 
         // @Param({"128", "512", "2048", "8192", "32768", "65536", "131072" })
-        public int bytesPerItem = 512;
+        public int bytesPerItem = 131072;
 
         public int batchSize;
 

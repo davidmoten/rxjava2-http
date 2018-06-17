@@ -653,12 +653,12 @@ public class ClientTest {
         // Create Server
         Server server = new Server(0);
         ServletContextHandler context = new ServletContextHandler();
-        ServletHolder defaultServ = new ServletHolder("default", HandlerServletSync.class);
+        ServletHolder defaultServ = new ServletHolder("default", ServletSync.class);
         defaultServ.setInitParameter("resourceBase", System.getProperty("user.dir"));
         defaultServ.setInitParameter("dirAllowed", "true");
         context.addServlet(defaultServ, "/");
         server.setHandler(context);
-        HandlerServletSync.flowable = flowable;
+        ServletSync.flowable = flowable;
         try {
             server.start();
         } catch (Exception e) {

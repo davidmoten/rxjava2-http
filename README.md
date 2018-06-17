@@ -31,7 +31,7 @@ The servlet below exposes the `Flowable.range(1, 1000)` stream across HTTP using
 
 ```java
 @WebServlet(urlPatterns={"/stream"})
-public class HandlerServlet extends FlowableHttpServlet {
+public class StreamServlet extends FlowableHttpServlet {
       
   @Override
   public Response respond(HttpServletRequest req) {
@@ -43,7 +43,7 @@ public class HandlerServlet extends FlowableHttpServlet {
 }
 ```
 
-The default behaviour is to schedule requests on `Schedulers.io()` and to handle requests asynchronously. These aspects can be configured via other methods in the `Response` builder.
+The default behaviour is to schedule requests on `Schedulers.io()` and to handle requests asynchronously. These aspects can be configured via other methods in the `Response` builder. See [Throughput](#throughput) section for more details.
 
 Bear in mind that each `ByteBuffer` in the server flowable will be reconstituted as is on the client side and you will want to ensure that the client can allocate byte arrays for each item. For example, mobile platforms like Android have quite low max heap sizes so that if the client is one of those platforms you will need to chunk up the data appropriately. (This may be a use-case for supporting [Nested Flowables](#nested-flowables), let me know if you need it).
 
@@ -68,7 +68,7 @@ Flowable<Integer> numbers =
     .sslContext(sslContext)
     .transform(con -> con.setFollowRedirects(true))
     .basicAuth("username", "password")
-    .serializer(serializer) // used for deserialization
+    .deserializer(deserializer) // used for deserialization
     .rebatchRequests(128); // necessary to enable backpressure over the network without blocking calls
 ```
 
@@ -164,8 +164,6 @@ Flowable
   .subscribe(...);
 ```
 
-A later version may use more of the non-blocking features of NIO. 
-
 ## Design
 WebSockets is a natural for this but can be blocked by corporate firewalls so this library starts with support for HTTP 1.1. 
 
@@ -235,7 +233,7 @@ Batching requests to balance backpressure and throughput is best tuned with benc
 
 ```java
 @WebServlet
-public final class HandlerServletAsync extends FlowableHttpServlet {
+public final class ServletAsync extends FlowableHttpServlet {
 
     @Override
     public Response respond(HttpServletRequest req) {
