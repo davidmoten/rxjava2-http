@@ -22,7 +22,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <rxjava.version>2.1.13</rxjava.version>
+        <rxjava.version>2.1.14</rxjava.version>
         <jmh.version>1.11.1</jmh.version>
         <exec.version>1.4.0</exec.version>
         <slf4j.version>1.7.12</slf4j.version>
@@ -34,7 +34,6 @@
         <javadoc.version>2.10.3</javadoc.version>
         <pmd.version>3.5</pmd.version>
         <jdepend.version>2.0</jdepend.version>
-        <javancss.version>2.1</javancss.version>
         <project.info.version>2.4</project.info.version>
         <jxr.version>2.5</jxr.version>
         <taglist.version>2.4</taglist.version>
@@ -278,11 +277,6 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>jdepend-maven-plugin</artifactId>
                 <version>${jdepend.version}</version>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>javancss-maven-plugin</artifactId>
-                <version>${javancss.version}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
