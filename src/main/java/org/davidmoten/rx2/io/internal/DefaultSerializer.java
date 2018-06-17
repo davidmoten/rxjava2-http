@@ -7,11 +7,11 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 
-import org.davidmoten.rx2.io.Serializer;
+import org.davidmoten.rx2.io.SerializerDeserializer;
 
 import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 
-public final class DefaultSerializer<T extends Serializable> implements Serializer<T> {
+public final class DefaultSerializer<T extends Serializable> implements SerializerDeserializer<T> {
 
     private final int bufferSize;
 

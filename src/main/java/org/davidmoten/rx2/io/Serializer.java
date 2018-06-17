@@ -9,9 +9,7 @@ public interface Serializer<T> {
 
     ByteBuffer serialize(T t);
 
-    T deserialize(ByteBuffer bb);
-
-    public static <T extends Serializable> Serializer<T> javaIo() {
+    public static <T extends Serializable> SerializerDeserializer<T> javaIo() {
         return DefaultSerializer.<T>instance();
     }
 

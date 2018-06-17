@@ -222,7 +222,7 @@ public final class Client {
          *            the deserializer to be used
          * @return this
          */
-        public <T> Flowable<T> serializer(Serializer<T> serializer) {
+        public <T> Flowable<T> deserializer(Deserializer<T> serializer) {
             Preconditions.checkNotNull(serializer);
             return build().map(serializer::deserialize);
         }
@@ -236,7 +236,7 @@ public final class Client {
          * @return the built Flowable
          */
         public <T extends Serializable> Flowable<T> deserialized() {
-            return serializer(Serializer.javaIo());
+            return deserializer(Serializer.javaIo());
         }
 
         /**
