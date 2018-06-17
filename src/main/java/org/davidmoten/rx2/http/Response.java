@@ -8,7 +8,7 @@ import org.reactivestreams.Publisher;
 import io.reactivex.Scheduler;
 import io.reactivex.schedulers.Schedulers;
 
-public class Response {
+public final class Response {
 
     private final Publisher<? extends ByteBuffer> publisher;
 

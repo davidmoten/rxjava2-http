@@ -105,7 +105,7 @@ Flowable<Integer> numbers =
 ## Good practices
 
 ### Backpressure
-To ensure backpressure is applied over the network (so operating system IO buffers don't fill and block threads) it's a good idea to request data in batches:
+To ensure backpressure is applied over the network (so operating system IO buffers don't fill and block threads) it's a good idea to request data in batches (and to request more before the buffer is exhausted to lessen the effect of request overhead):
 
 * apply `rebatchRequests` to the client-side Flowable
 * [*rxjava2-extras*](https://github.com/davidmoten/rxjava2-extras) has a number of request manipulating operators (`minRequest`, `maxRequest` and another version of [`rebatchRequests`](https://github.com/davidmoten/rxjava2-extras#rebatchrequests) with different features)
