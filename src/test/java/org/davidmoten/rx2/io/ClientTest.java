@@ -602,14 +602,14 @@ public class ClientTest {
     public void testRangeParallelLongRunning() throws Exception {
         Flowable<ByteBuffer> flowable = Flowable //
                 .rangeLong(1, Long.MAX_VALUE) //
-                .map(Serializer.javaIo()::serialize);
+                .map(x -> ByteBuffer.wrap(Util.toBytes(x)));
         Server server = createServerAsync(flowable);
         final long N = Long.parseLong(System.getProperty("N", "100000"));
         try {
             Flowable<Long> f = Flowable.defer(() -> {
                 AtomicLong count = new AtomicLong();
                 return get(server) //
-                        .<Long>deserialized() //
+                        .<Long>deserializer(bb -> bb.getLong()) //
                         .doOnNext(n -> {
                             long c = count.incrementAndGet();
                             if (c % 100000 == 0) {
