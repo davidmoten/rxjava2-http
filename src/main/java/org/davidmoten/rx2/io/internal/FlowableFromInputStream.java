@@ -24,6 +24,7 @@ import io.reactivex.plugins.RxJavaPlugins;
 public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
     private static final Logger log = LoggerFactory.getLogger(FlowableFromInputStream.class);
+    
     private final InputStream in;
     private final BiConsumer<Long, Long> requester;
 
@@ -50,6 +51,9 @@ public final class FlowableFromInputStream extends Flowable<ByteBuffer> {
 
         private final InputStream in;
         private final Subscriber<? super ByteBuffer> child;
+        
+        // allocation costs are higher as requests come in because we
+        // are using an immutable class IdRequested
         private final AtomicReference<IdRequested> requested;
 
         private final BiConsumer<Long, Long> requester;
