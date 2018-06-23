@@ -30,10 +30,12 @@ import com.github.davidmoten.guavamini.Preconditions;
 import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 
 import io.reactivex.Flowable;
+import io.reactivex.Scheduler;
 import io.reactivex.Single;
 import io.reactivex.functions.BiConsumer;
 import io.reactivex.functions.Consumer;
 import io.reactivex.plugins.RxJavaPlugins;
+import io.reactivex.schedulers.Schedulers;
 
 public final class Client {
 
@@ -77,6 +79,7 @@ public final class Client {
         private SSLSocketFactory sslSocketFactory;
         private List<Consumer<HttpURLConnection>> transforms = new ArrayList<>();
         private Proxy proxy;
+        private Scheduler requestScheduler = Schedulers.trampoline();
 
         Builder(String url, HttpMethod method) {
             this.url = url;
@@ -215,6 +218,11 @@ public final class Client {
             return sslSocketFactory(sslContext.getSocketFactory());
         }
 
+        public Builder requestScheduler(Scheduler scheduler) {
+            this.requestScheduler = scheduler;
+            return this;
+        }
+
         /**
          * Sets the deserializer to be used on the arriving {@link ByteBuffer}s.
          * 
@@ -247,7 +255,7 @@ public final class Client {
          */
         public Flowable<ByteBuffer> build() {
             return toFlowable(url, new Options(method, connectTimeoutMs, readTimeoutMs,
-                    requestHeaders, sslSocketFactory, transforms, proxy));
+                    requestHeaders, sslSocketFactory, transforms, proxy, requestScheduler));
         }
     }
 
@@ -318,10 +326,12 @@ public final class Client {
         final SSLSocketFactory sslSocketFactory;
         final List<Consumer<HttpURLConnection>> transforms;
         final Proxy proxy;
+        final Scheduler requestScheduler;
 
         Options(HttpMethod method, int connectTimeoutMs, int readTimeoutMs,
                 Map<String, String> requestHeaders, SSLSocketFactory sslSocketFactory,
-                List<Consumer<HttpURLConnection>> transforms, Proxy proxy) {
+                List<Consumer<HttpURLConnection>> transforms, Proxy proxy,
+                Scheduler requestScheduler) {
             this.method = method;
             this.connectTimeoutMs = connectTimeoutMs;
             this.readTimeoutMs = readTimeoutMs;
@@ -329,6 +339,7 @@ public final class Client {
             this.sslSocketFactory = sslSocketFactory;
             this.transforms = transforms;
             this.proxy = proxy;
+            this.requestScheduler = requestScheduler;
         }
     }
 
@@ -344,18 +355,21 @@ public final class Client {
 
         @Override
         public void accept(Long id, Long request) throws Exception {
-            try {
-                HttpURLConnection con = (HttpURLConnection) new URL(
-                        url + "?id=" + id + "&r=" + request) //
-                                .openConnection();
-                prepareConnection(con, options);
-                int code = con.getResponseCode();
-                if (code != 200) {
-                    throw new IOException("response code from request call was not 200: " + code);
+            options.requestScheduler.scheduleDirect(() -> {
+                try {
+                    HttpURLConnection con = (HttpURLConnection) new URL(
+                            url + "?id=" + id + "&r=" + request) //
+                                    .openConnection();
+                    prepareConnection(con, options);
+                    int code = con.getResponseCode();
+                    if (code != 200) {
+                        throw new IOException(
+                                "response code from request call was not 200: " + code);
+                    }
+                } catch (Throwable e) {
+                    RxJavaPlugins.onError(e);
                 }
-            } catch (Throwable e) {
-                RxJavaPlugins.onError(e);
-            }
+            });
         }
     }
 
