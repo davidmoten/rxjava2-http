@@ -51,16 +51,19 @@ public class ClientTest {
 
     @Test
     public void isUtilityClass() {
+        System.out.println("isUtilityClass");
         Asserts.assertIsUtilityClass(Client.class);
     }
 
     @Test(expected = RuntimeException.class)
     public void testBadUrl() {
+        System.out.println("testBadUrl");
         Client.get("url").build();
     }
 
     @Test
     public void testGetWithClient() throws Exception {
+        System.out.println("testGetWithClient");
         Server server = createServerAsync(SOURCE);
         log.debug("started server");
         try {
@@ -93,6 +96,7 @@ public class ClientTest {
 
     @Test
     public void testRequestOfUnknownStreamIdShouldEmitError() throws Exception {
+        System.out.println("testRequestOfUnknownStreamIdShouldEmitError");
         Server server = createServerAsync(SOURCE);
         try {
             // TODO
@@ -104,6 +108,7 @@ public class ClientTest {
 
     @Test
     public void testStreamWithEmptyByteBuffer() throws Exception {
+        System.out.println("testStreamWithEmptyByteBuffer");
         Server server = createServerAsync(Flowable.just(ByteBuffer.wrap(new byte[] {})));
         try {
             get(server) //
@@ -124,6 +129,7 @@ public class ClientTest {
 
     @Test
     public void testStreamWithEmptyByteBufferThenMore() throws Exception {
+        System.out.println("testStreamWithEmptyByteBufferThenMore");
         Server server = createServerAsync(Flowable.just(ByteBuffer.wrap(new byte[] {}),
                 ByteBuffer.wrap(new byte[] { 1, 2 })));
         try {
@@ -141,6 +147,7 @@ public class ClientTest {
 
     @Test
     public void testGetEmptyStream() throws Exception {
+        System.out.println("testGetEmptyStream");
         Server server = createServerAsync(Flowable.empty());
         try {
             get(server) //
@@ -157,6 +164,7 @@ public class ClientTest {
 
     @Test
     public void testGetAsynchronousSource() throws Exception {
+        System.out.println("testGetAsynchronousSource");
         Server server = createServerAsync( //
                 Flowable.timer(300, TimeUnit.MILLISECONDS) //
                         .map(x -> ByteBuffer.wrap(new byte[] { 1 })));
@@ -175,6 +183,7 @@ public class ClientTest {
 
     @Test
     public void testError() throws Exception {
+        System.out.println("testError");
         RuntimeException ex = new RuntimeException("boo");
         Server server = createServerAsync(Flowable.error(ex));
         try {
@@ -192,6 +201,7 @@ public class ClientTest {
 
     @Test
     public void testValuesThenError() throws Exception {
+        System.out.println("testValuesThenError");
         RuntimeException ex = new RuntimeException("boo");
         Server server = createServerAsync( //
                 Flowable.just(1, 2, 3) //
@@ -212,6 +222,7 @@ public class ClientTest {
 
     @Test
     public void testCancel() throws Exception {
+        System.out.println("testCancel");
         Server server = createServerAsync(
                 Flowable.just(ByteBuffer.wrap(new byte[] { 1 })).repeat());
         try {
@@ -230,6 +241,7 @@ public class ClientTest {
 
     @Test
     public void testLongStream() throws Exception {
+        System.out.println("testLongStream");
         Flowable<ByteBuffer> flowable = Flowable.rangeLong(1, Long.MAX_VALUE)
                 .map(n -> ByteBuffer.wrap(Util.toBytes(n)));
         Server server = createServerAsync(flowable);
@@ -262,21 +274,25 @@ public class ClientTest {
 
     @Test
     public void test40ByteStream() throws Exception {
+        System.out.println("test40ByteStream");
         testByteStream(40, 100000);
     }
 
     @Test
     public void test400ByteStream() throws Exception {
+        System.out.println("test400ByteStream");
         testByteStream(400, 10000);
     }
 
     @Test
     public void testLongByteArrayStream() throws Exception {
+        System.out.println("testLongByteArrayStream");
         testByteStream(131072, 10000);
     }
 
     @Test
     public void test4000ByteStream() throws Exception {
+        System.out.println("test4000ByteStream");
         testByteStream(4000, 1000);
     }
 
@@ -316,6 +332,7 @@ public class ClientTest {
 
     @Test
     public void testRangeManyTimes() throws Exception {
+        System.out.println("testRangeManyTimes");
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
         Server server = createServerAsync(flowable);
         try {
@@ -338,6 +355,7 @@ public class ClientTest {
 
     @Test
     public void testRangeRebatchedManyTimes() throws Exception {
+        System.out.println("testRangeRebatchedManyTimes");
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
         Server server = createServerAsync(flowable);
         try {
@@ -361,6 +379,7 @@ public class ClientTest {
 
     @Test
     public void testRangeAsync() throws Exception {
+        System.out.println("testRangeAsync");
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize)
                 .observeOn(Schedulers.io());
         Server server = createServerAsync(flowable);
@@ -383,6 +402,7 @@ public class ClientTest {
 
     @Test
     public void testBackpressure() throws Exception {
+        System.out.println("testBackpressure");
         List<Long> requests = new CopyOnWriteArrayList<>();
         AtomicBoolean cancelled = new AtomicBoolean();
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000) //
@@ -420,6 +440,7 @@ public class ClientTest {
 
     @Test
     public void testRangeParallel() throws Exception {
+        System.out.println("testRangeParallel");
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
         Server server = createServerAsync(flowable);
         try {
@@ -441,6 +462,7 @@ public class ClientTest {
 
     @Test
     public void testRangeParallelSync() throws Exception {
+        System.out.println("testRangeParallelSync");
         Flowable<ByteBuffer> flowable = Flowable.range(1, 1000).map(Serializer.javaIo()::serialize);
         Server server = createServerSync(flowable);
         try {
@@ -473,6 +495,7 @@ public class ClientTest {
 
     @Test
     public void testGetWithClient2() throws Exception {
+        System.out.println("testGetWithClient2");
         Server server = createServerAsync(SOURCE);
         try {
             get(server) //
@@ -490,6 +513,7 @@ public class ClientTest {
 
     @Test
     public void testGetWithClientHttpPost() throws Exception {
+        System.out.println("testGetWithClientHttpPost");
         Server server = createServerAsync(SOURCE);
         try {
             post(server) //
@@ -507,6 +531,7 @@ public class ClientTest {
 
     @Test
     public void testFlowableFactoryThrows() throws Exception {
+        System.out.println("testFlowableFactoryThrows");
         Server server = createServerFlowableFactoryThrows();
         try {
             get(server) //
@@ -524,6 +549,7 @@ public class ClientTest {
 
     @Test
     public void testSimpleGet() throws Exception {
+        System.out.println("testSimpleGet");
         Server server = createServerAsync(SOURCE);
         try {
             // Start Server
@@ -551,47 +577,56 @@ public class ClientTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testClientNegativeTimeoutThrows() {
+        System.out.println("testClientNegativeTimeoutThrows");
         Client.get("http://blah").connectTimeoutMs(-1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testClientNegativeReadTimeoutThrows() {
+        System.out.println("testClientNegativeReadTimeoutThrows");
         Client.get("http://blah").readTimeoutMs(-1);
     }
 
     @Test(expected = NullPointerException.class)
     public void testClientProxyNullThrows() {
+        System.out.println("testClientProxyNullThrows");
         Client.get("http://blah").proxy(null);
     }
 
     @Test(expected = NullPointerException.class)
     public void testClientProxyNullHostThrows() {
+        System.out.println("testClientProxyNullHostThrows");
         Client.get("http://blah").proxy(null, 8080);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testClientProxyNegativePortThrows() {
+        System.out.println("testClientProxyNegativePortThrows");
         Client.get("http://blah").proxy("proxy", -1);
     }
 
     @Test
     public void testClientValidProxyDoesNotThrow() {
+        System.out.println("testClientValidProxyDoesNotThrow");
         Client.get("http://blah").proxy("proxy", 8080);
     }
     
     @Test(expected = NullPointerException.class)
     public void testRequestHeaderNullThrows() {
+        System.out.println("testRequestHeaderNullThrows");
         Client.get("http://blah").requestHeader(null, "a");
     }
     
     @Test(expected = NullPointerException.class)
     public void testRequestHeaderNullValueThrows() {
+        System.out.println("testRequestHeaderNullValueThrows");
         Client.get("http://blah").requestHeader("a", null);
     }
 
 
     @Test
     public void testRequesterNon200ResponseCode() throws Exception {
+        System.out.println("testRequesterNon200ResponseCode");
         Requester r = new Client.Requester("http://localhost/doesNotExist",
                 new Options(HttpMethod.GET, 1000, 1000, Collections.emptyMap(), null,
                         Collections.emptyList(), null, Schedulers.trampoline()));
@@ -600,6 +635,7 @@ public class ClientTest {
 
     @Test
     public void testRangeParallelLongRunning() throws Exception {
+        System.out.println("testRangeParallelLongRunning");
         Flowable<ByteBuffer> flowable = Flowable //
                 .rangeLong(1, Long.MAX_VALUE) //
                 .map(x -> ByteBuffer.wrap(Util.toBytes(x)));
