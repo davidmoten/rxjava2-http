@@ -5,7 +5,7 @@
 
 Transmit RxJava2 Flowable over http (with non-blocking backpressure).
 
-Status: *pre-alpha* (in development). First release scheduled for late June 2018.
+Status: *pre-alpha* (in development). First release scheduled for July 2018.
 
 ## Features
 * Apply non-blocking backpressure to streams over networks
