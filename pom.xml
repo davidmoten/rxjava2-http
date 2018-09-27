@@ -193,7 +193,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Automatic-Module-Name>com.github.davidmoten.rxjava2.aws</Automatic-Module-Name>
+                            <Automatic-Module-Name>com.github.davidmoten.rxjava2.http</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
                 </configuration>
