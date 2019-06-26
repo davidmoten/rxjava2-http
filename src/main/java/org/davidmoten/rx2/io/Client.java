@@ -226,8 +226,8 @@ public final class Client {
         /**
          * Sets the deserializer to be used on the arriving {@link ByteBuffer}s.
          * 
-         * @param serializer
-         *            the deserializer to be used
+         * @param <T> stream type
+         * @param serializer the deserializer to be used
          * @return this
          */
         public <T> Flowable<T> deserializer(Deserializer<T> serializer) {
