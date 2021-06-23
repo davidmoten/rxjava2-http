@@ -23,7 +23,7 @@
         <rxjava.version>2.2.17</rxjava.version>
         <exec.version>1.4.0</exec.version>
         <slf4j.version>1.7.12</slf4j.version>
-        <jetty.version>9.4.19.v20190610</jetty.version>
+        <jetty.version>9.4.41.v20210516</jetty.version>
         <jmh.version>1.21</jmh.version>
         <cobertura.version>2.7</cobertura.version>
         <checkstyle.version>2.16</checkstyle.version>
