@@ -1,5 +1,5 @@
 # rxjava2-http
-<a href="https://travis-ci.org/davidmoten/rxjava2-http"><img src="https://travis-ci.org/davidmoten/rxjava2-http.svg"/></a><br/>
+<a href="https://github.com/davidmoten/rxjava2-http/actions/workflows/ci.yml"><img src="https://github.com/davidmoten/rxjava2-http/actions/workflows/ci.yml/badge.svg"/></a><br/>
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.davidmoten/rxjava2-http/badge.svg?style=flat)](https://maven-badges.herokuapp.com/maven-central/com.github.davidmoten/rxjava2-http)<br/>
 [![codecov](https://codecov.io/gh/davidmoten/rxjava2-http/branch/master/graph/badge.svg)](https://codecov.io/gh/davidmoten/rxjava2-http)
 
