@@ -5,7 +5,7 @@
 
 Transmit RxJava2 Flowable over http (with non-blocking backpressure).
 
-Status: Released to Maven Central.
+*Status*: Released to Maven Central.
 
 ## Features
 * Apply non-blocking backpressure to streams over networks
