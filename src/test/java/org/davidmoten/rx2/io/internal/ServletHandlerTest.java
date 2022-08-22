@@ -27,7 +27,7 @@ public class ServletHandlerTest {
     
     @Test
     public void testNextId() {
-        Random r = Mockito.mock(Random.class);
+        Random r = Mockito.mock(Random.class, Mockito.withSettings().withoutAnnotations());
         Mockito.when(r.nextLong()).thenReturn(0L, 10L);
         assertEquals(10, ServletHandler.nextId(r));
     }
