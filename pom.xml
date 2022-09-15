@@ -23,7 +23,7 @@
         <rxjava.version>2.2.21</rxjava.version>
         <exec.version>3.1.0</exec.version>
         <slf4j.version>1.7.36</slf4j.version>
-        <jetty.version>9.4.48.v20220622</jetty.version>
+        <jetty.version>9.4.49.v20220914</jetty.version>
         <jmh.version>1.35</jmh.version>
         <checkstyle.version>3.2.0</checkstyle.version>
         <findbugs.version>2.5.4</findbugs.version>
