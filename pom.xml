@@ -25,7 +25,7 @@
         <slf4j.version>1.7.36</slf4j.version>
         <jetty.version>9.4.51.v20230217</jetty.version>
         <jmh.version>1.36</jmh.version>
-        <checkstyle.version>3.2.1</checkstyle.version>
+        <checkstyle.version>3.2.2</checkstyle.version>
         <findbugs.version>2.5.4</findbugs.version>
         <javadoc.version>3.5.0</javadoc.version>
         <pmd.version>3.20.0</pmd.version>
