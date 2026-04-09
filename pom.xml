@@ -22,7 +22,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <rxjava.version>2.2.21</rxjava.version>
         <exec.version>3.6.3</exec.version>
-        <slf4j.version>1.7.36</slf4j.version>
+        <slf4j.version>2.0.0</slf4j.version>
         <jetty.version>9.4.56.v20240826</jetty.version>
         <jmh.version>1.37</jmh.version>
         <checkstyle.version>3.5.0</checkstyle.version>
